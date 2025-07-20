@@ -232,32 +232,18 @@ fn generic_report(transactions: List(Transaction)) {
 }
 
 pub fn report_csv(transactions: List(Transaction)) {
-  let result = generic_report(transactions)
+  use report <- result.try(generic_report(transactions))
 
-  case result {
-    Ok(report) -> {
-      list.append([report.headers], report.rows)
-      |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
-    }
-    Error(err) -> {
-      "Error: " <> err
-    }
-  }
+  list.append([report.headers], report.rows)
+  |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
+  |> Ok
 }
 
 pub fn report_table(transactions: List(Transaction)) {
-  let result = generic_report(transactions)
+  use report <- result.try(generic_report(transactions))
 
-  case result {
-    Ok(report) -> {
-      let config = table_config()
-
-      gtabler.print_table(config, report.headers, report.rows)
-    }
-    Error(err) -> {
-      "Error: " <> err
-    }
-  }
+  gtabler.print_table(table_config(), report.headers, report.rows)
+  |> Ok
 }
 
 fn table_config() {
@@ -438,10 +424,12 @@ pub fn format_amount(amount: Float) -> String {
     float.truncate(amount)
     |> int.to_string
 
+  let absolute_value = amount |> float.absolute_value
+  let integer = float.floor(absolute_value)
+
   let decimals =
-    amount
-    |> float.absolute_value
-    |> float.min(1.0)
+    absolute_value -. integer
+    |> float.to_precision(3)
     |> float.to_string
     |> string.drop_start(2)
 
@@ -532,14 +520,25 @@ fn parse_float(input: String) {
   float.parse(input) |> result.replace_error("Unable to parse " <> input)
 }
 
-fn read_input(file_path: String) {
+fn read_input(file_path: String) -> Result(List(Transaction), String) {
   use content <- result.try(
     simplifile.read(from: file_path)
     |> result.replace_error("Unable to read " <> file_path),
   )
 
-  use input <- result.try(parse_input(content))
-  Ok(1)
+  parse_input(content)
+}
+
+fn write_output(report: String, file_path: String) {
+  simplifile.write(to: file_path, contents: report)
+  |> result.replace_error("Unable to write to " <> file_path)
+}
+
+fn process_file(in_path: String, out_path: String) {
+  use input <- result.try(read_input(in_path))
+  use report <- result.try(report_csv(input))
+  use _ <- result.try(write_output(report, out_path))
+  Ok("Done")
 }
 
 pub fn main() -> Nil {

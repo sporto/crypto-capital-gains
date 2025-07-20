@@ -1,9 +1,7 @@
 import birdie
-import gleam/time/calendar.{Date}
 import gleeunit
 import tempo/date
 import transactions.{type Transaction, make_buy, make_sale}
-import youid/uuid.{v4}
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -22,10 +20,6 @@ fn feb_2() {
   date.literal("2020-02-02")
 }
 
-fn feb_3() {
-  date.literal("2020-02-03")
-}
-
 fn feb_4() {
   date.literal("2020-02-04")
 }
@@ -41,7 +35,10 @@ fn feb_6() {
 fn assert_report(transactions: List(Transaction), label: String) {
   let transaction_table = transactions.transactions_table(transactions)
 
-  let report = transactions.report_table(transactions)
+  let report = case transactions.report_table(transactions) {
+    Ok(report) -> report
+    Error(err) -> "Error: " <> err
+  }
 
   let output =
     "# "
