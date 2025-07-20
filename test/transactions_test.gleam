@@ -168,3 +168,21 @@ pub fn two_buys_two_sales_test() {
   ]
   |> assert_report("Two buys, two sales")
 }
+
+pub fn order_matters_test() {
+  [
+    make_sale(
+      date: Date(2020, calendar.February, 1),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+    ),
+    make_buy(
+      date: Date(2020, calendar.February, 2),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+    ),
+  ]
+  |> assert_report("Buy must be before")
+}

@@ -1,0 +1,16 @@
+---
+version: 1.3.1
+title: Buy must be before
+---
+# Buy must be before
+
+## Transactions
+
+Date      |Coin|Kind|Qty  |Each|Total
+----------|----|----|-----|----|-----
+2020-02-01|XRP |Sale|100.0|0.5 |50.0 
+2020-02-02|XRP |Buy |100.0|0.5 |50.0 
+
+## Allocations
+
+Error: No Buy Transactions Left

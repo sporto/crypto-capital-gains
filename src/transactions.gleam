@@ -3,9 +3,11 @@ import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/order
 import gleam/result
 import gleam/string
 import gleam/time/calendar.{type Date}
+import gleam/time/timestamp
 import gsv
 import gtabler
 import youid/uuid.{type Uuid}
@@ -119,7 +121,7 @@ pub type Error {
   NoBuyTransactionsLeft
 }
 
-fn error_to_string(_e: Error) {
+fn error_to_label(_e: Error) {
   "No Buy Transactions Left"
 }
 
@@ -237,7 +239,7 @@ pub fn report_csv(transactions: List(Transaction)) {
       |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
     }
     Error(err) -> {
-      error_to_string(err)
+      "Error: " <> error_to_label(err)
     }
   }
 }
@@ -252,7 +254,7 @@ pub fn report_table(transactions: List(Transaction)) {
       gtabler.print_table(config, report.headers, report.rows)
     }
     Error(err) -> {
-      error_to_string(err)
+      "Error: " <> error_to_label(err)
     }
   }
 }
@@ -340,8 +342,8 @@ fn allocate_sale_transaction(
 
   let remainding_qty_to_allocate = sale_transaction.qty -. qty_allocated_so_far
 
-  echo "remainding_qty_to_allocate"
-  echo remainding_qty_to_allocate
+  // echo "remainding_qty_to_allocate"
+  // echo remainding_qty_to_allocate
 
   use <- given.that(remainding_qty_to_allocate >. 0.0, else_return: fn() {
     Ok(allocations_for_this_sale_transaction)
@@ -350,6 +352,24 @@ fn allocate_sale_transaction(
   // Try the next buy transaction
   case relevant_buy_transactions {
     [buy_transaction, ..rest_buy_transactions] -> {
+      // buy transaction must be before sale transaction
+      let buy_timestamp = date_to_timestamp(buy_transaction.date)
+
+      let sale_timestamp = date_to_timestamp(sale_transaction.date)
+
+      let buy_is_same = buy_timestamp == sale_timestamp
+
+      let buy_is_before =
+        timestamp.compare(buy_timestamp, sale_timestamp) == order.Lt
+
+      use <- given.that(buy_is_same || buy_is_before, else_return: fn() {
+        allocate_sale_transaction(
+          sale_transaction,
+          rest_buy_transactions,
+          allocations_for_this_coin,
+        )
+      })
+
       let allocations_for_this_buy_transaction =
         allocations_for_this_coin
         |> list.filter(fn(alloc) {
@@ -361,14 +381,14 @@ fn allocate_sale_transaction(
         |> list.map(fn(alloc) { alloc.qty })
         |> float.sum
 
-      echo "qty_allocated_so_far_for_buy_transaction"
-      echo qty_allocated_so_far_for_buy_transaction
+      // echo "qty_allocated_so_far_for_buy_transaction"
+      // echo qty_allocated_so_far_for_buy_transaction
 
       let remainder_to_allocate_for_buy =
         buy_transaction.qty -. qty_allocated_so_far_for_buy_transaction
 
-      echo "remainder_to_allocate_for_buy"
-      echo remainder_to_allocate_for_buy
+      // echo "remainder_to_allocate_for_buy"
+      // echo remainder_to_allocate_for_buy
 
       use <- given.that(remainder_to_allocate_for_buy >. 0.0, else_return: fn() {
         allocate_sale_transaction(
@@ -381,8 +401,8 @@ fn allocate_sale_transaction(
       let allocation_qty =
         float.min(remainder_to_allocate_for_buy, remainding_qty_to_allocate)
 
-      echo "allocation_qty"
-      echo allocation_qty
+      // echo "allocation_qty"
+      // echo allocation_qty
 
       let buy_price_each = buy_transaction.price_each
       let buy_price_total = allocation_qty *. buy_price_each
@@ -408,8 +428,8 @@ fn allocate_sale_transaction(
           sale_price_total:,
         )
 
-      echo "new_allocation"
-      echo new_allocation
+      // echo "new_allocation"
+      // echo new_allocation
 
       let next_allocations =
         list.append(allocations_for_this_coin, [new_allocation])
@@ -425,6 +445,15 @@ fn allocate_sale_transaction(
       Error(error)
     }
   }
+}
+
+/// Only used for comparisons
+fn date_to_timestamp(date: Date) {
+  timestamp.from_calendar(
+    date,
+    time: calendar.TimeOfDay(0, 0, 0, 0),
+    offset: calendar.utc_offset,
+  )
 }
 
 pub fn main() -> Nil {
