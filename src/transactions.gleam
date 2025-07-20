@@ -1,17 +1,22 @@
 import given
 import gleam/float
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/result
+import gleam/string
+import gleam/time/calendar.{type Date}
+import gsv
 import youid/uuid.{type Uuid}
 
 pub type Kind {
   Buy
-  Sell
+  Sale
 }
 
 pub type Transaction {
   Transaction(
+    date: calendar.Date,
     id: Uuid,
     coin: String,
     kind: Kind,
@@ -21,25 +26,96 @@ pub type Transaction {
   )
 }
 
+pub fn make_transaction(
+  date date: Date,
+  coin coin: String,
+  kind kind: Kind,
+  qty qty: Float,
+  price_each price_each: Float,
+) {
+  Transaction(
+    id: uuid.v4(),
+    date:,
+    coin:,
+    kind:,
+    qty:,
+    price_each:,
+    price_total: qty *. price_each,
+  )
+}
+
+pub fn make_buy(
+  date date: Date,
+  coin coin: String,
+  qty qty: Float,
+  price_each price_each: Float,
+) {
+  make_transaction(date:, coin:, kind: Buy, qty:, price_each:)
+}
+
+pub fn make_sale(
+  date date: Date,
+  coin coin: String,
+  qty qty: Float,
+  price_each price_each: Float,
+) {
+  make_transaction(date:, coin:, kind: Sale, qty:, price_each:)
+}
+
 pub type SaleAllocation {
   SaleAllocation(
+    buy_date: calendar.Date,
     buy_price_each: Float,
     buy_price_total: Float,
     buy_transaction_id: Uuid,
+    capital_gain: Float,
     coin: String,
     id: Uuid,
     qty: Float,
+    sale_date: calendar.Date,
     sale_transaction_id: Uuid,
-    sell_price_each: Float,
-    sell_price_total: Float,
+    sale_price_each: Float,
+    sale_price_total: Float,
   )
 }
+
+type ReportColumn {
+  ColCoin
+  ColBuyDate
+  ColSaleDate
+  ColQty
+  ColBuyPriceEach
+  ColBuyPriceTotal
+  ColSalePriceEach
+  ColSalePriceTotal
+  ColCapitalGain
+}
+
+const report_columns = [
+  ColCoin,
+  ColBuyDate,
+  ColSaleDate,
+  ColQty,
+  ColBuyPriceEach,
+  ColBuyPriceTotal,
+  ColSalePriceEach,
+  ColSalePriceTotal,
+  ColCapitalGain,
+]
 
 pub type Acc {
   Acc(allocations: List(SaleAllocation))
 }
 
-pub fn calculate_taxes(transactions: List(Transaction)) {
+pub type Error {
+  NoBuyTransactionsLeft
+}
+
+fn error_to_string(_e: Error) {
+  "No Buy Transactions Left"
+}
+
+fn calculate_sale_allocations(transactions: List(Transaction)) {
   let #(buy_transactions, sale_transactions) =
     transactions |> list.partition(fn(t) { t.kind == Buy })
 
@@ -68,6 +144,81 @@ pub fn calculate_taxes(transactions: List(Transaction)) {
       Ok(Acc(next_allocations))
     },
   )
+  |> result.map(fn(acc) { acc.allocations })
+}
+
+pub fn report(transactions: List(Transaction)) {
+  let result = calculate_sale_allocations(transactions)
+
+  case result {
+    Ok(allocations) -> {
+      let headers = report_columns |> list.map(header_to_label)
+
+      allocations
+      |> list.map(sale_allocation_to_report_line)
+      |> list.prepend(headers)
+      |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
+    }
+    Error(err) -> {
+      error_to_string(err)
+    }
+  }
+}
+
+fn header_to_label(column: ReportColumn) {
+  case column {
+    ColBuyDate -> "Buy date"
+    ColBuyPriceEach -> "Buy price each"
+    ColBuyPriceTotal -> "Buy price total"
+    ColCapitalGain -> "Capital gain"
+    ColCoin -> "Coin"
+    ColQty -> "Quantity"
+    ColSaleDate -> "Sale date"
+    ColSalePriceEach -> "Sale price each"
+    ColSalePriceTotal -> "Sale price total"
+  }
+}
+
+fn sale_allocation_to_report_line(allocation: SaleAllocation) {
+  list.map(report_columns, sale_allocation_report_cell(_, allocation))
+}
+
+fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation) {
+  case column {
+    ColBuyDate -> allocation.buy_date |> date_to_label
+    ColBuyPriceEach -> allocation.buy_price_each |> float.to_string
+    ColBuyPriceTotal ->
+      allocation.buy_price_total
+      |> float.to_string
+    ColCapitalGain ->
+      allocation.capital_gain
+      |> float.to_string
+    ColCoin -> allocation.coin
+    ColQty ->
+      allocation.qty
+      |> float.to_string
+    ColSaleDate -> allocation.sale_date |> date_to_label
+    ColSalePriceEach ->
+      allocation.sale_price_each
+      |> float.to_string
+    ColSalePriceTotal ->
+      allocation.sale_price_total
+      |> float.to_string
+  }
+}
+
+fn date_to_label(date: Date) {
+  let year = int.to_string(date.year)
+
+  let month =
+    int.to_string(calendar.month_to_int(date.month))
+    |> string.pad_start(2, "0")
+
+  let day =
+    int.to_string(date.day)
+    |> string.pad_start(2, "0")
+
+  year <> "-" <> month <> "-" <> day
 }
 
 fn allocate_sale_transaction(
@@ -88,7 +239,10 @@ fn allocate_sale_transaction(
 
   let remainding_qty_to_allocate = sale_transaction.qty -. qty_allocated_so_far
 
-  use <- given.that(remainding_qty_to_allocate >=. 0.0, else_return: fn() {
+  echo "remainding_qty_to_allocate"
+  echo remainding_qty_to_allocate
+
+  use <- given.that(remainding_qty_to_allocate >. 0.0, else_return: fn() {
     Ok(allocations_for_this_sale_transaction)
   })
 
@@ -106,8 +260,14 @@ fn allocate_sale_transaction(
         |> list.map(fn(alloc) { alloc.qty })
         |> float.sum
 
+      echo "qty_allocated_so_far_for_buy_transaction"
+      echo qty_allocated_so_far_for_buy_transaction
+
       let remainder_to_allocate_for_buy =
         buy_transaction.qty -. qty_allocated_so_far_for_buy_transaction
+
+      echo "remainder_to_allocate_for_buy"
+      echo remainder_to_allocate_for_buy
 
       use <- given.that(remainder_to_allocate_for_buy >. 0.0, else_return: fn() {
         allocate_sale_transaction(
@@ -117,32 +277,38 @@ fn allocate_sale_transaction(
         )
       })
 
-      let can_buy_cover =
-        remainder_to_allocate_for_buy >=. remainding_qty_to_allocate
+      let allocation_qty =
+        float.min(remainder_to_allocate_for_buy, remainding_qty_to_allocate)
 
-      let allocation_qty = case can_buy_cover {
-        True -> remainding_qty_to_allocate
-        False -> remainder_to_allocate_for_buy
-      }
+      echo "allocation_qty"
+      echo allocation_qty
 
       let buy_price_each = buy_transaction.price_each
       let buy_price_total = allocation_qty *. buy_price_each
 
-      let sell_price_each = sale_transaction.price_each
-      let sell_price_total = allocation_qty *. buy_price_each
+      let sale_price_each = sale_transaction.price_each
+      let sale_price_total = allocation_qty *. sale_price_each
+
+      let capital_gain = sale_price_total -. buy_price_total
 
       let new_allocation =
         SaleAllocation(
+          buy_date: buy_transaction.date,
           buy_price_each:,
           buy_price_total:,
           buy_transaction_id: buy_transaction.id,
+          capital_gain:,
           coin: sale_transaction.coin,
           id: uuid.v4(),
           qty: allocation_qty,
+          sale_date: sale_transaction.date,
           sale_transaction_id: sale_transaction.id,
-          sell_price_each:,
-          sell_price_total:,
+          sale_price_each:,
+          sale_price_total:,
         )
+
+      echo "new_allocation"
+      echo new_allocation
 
       let next_allocations =
         list.append(allocations_for_this_coin, [new_allocation])
@@ -154,7 +320,8 @@ fn allocate_sale_transaction(
       )
     }
     _ -> {
-      Error("No buy transactions left")
+      let error = NoBuyTransactionsLeft
+      Error(error)
     }
   }
 }

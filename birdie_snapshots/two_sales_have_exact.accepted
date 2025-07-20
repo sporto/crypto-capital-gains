@@ -1,0 +1,9 @@
+---
+version: 1.3.1
+title: Two sales have exact
+file: ./test/transactions_test.gleam
+test_name: two_sales_have_exact_test
+---
+Coin,Buy date,Sale date,Quantity,Buy price each,Buy price total,Sale price each,Sale price total,Capital gain
+XRP,2020-02-01,2020-02-04,60.0,0.5,30.0,0.6,36.0,6.0
+XRP,2020-02-01,2020-02-04,40.0,0.5,20.0,0.9,36.0,16.0
