@@ -7,6 +7,7 @@ import gleam/result
 import gleam/string
 import gleam/time/calendar.{type Date}
 import gsv
+import gtabler
 import youid/uuid.{type Uuid}
 
 pub type Kind {
@@ -147,17 +148,52 @@ fn calculate_sale_allocations(transactions: List(Transaction)) {
   |> result.map(fn(acc) { acc.allocations })
 }
 
+type GenericReport {
+  GenericReport(headers: List(String), rows: List(List(String)))
+}
+
+fn generic_report(transactions: List(Transaction)) {
+  use allocations <- result.try(calculate_sale_allocations(transactions))
+
+  let headers = report_columns |> list.map(header_to_label)
+
+  let rows =
+    allocations
+    |> list.map(sale_allocation_to_report_line)
+
+  let report = GenericReport(headers:, rows:)
+
+  Ok(report)
+}
+
 pub fn report(transactions: List(Transaction)) {
-  let result = calculate_sale_allocations(transactions)
+  let result = generic_report(transactions)
 
   case result {
-    Ok(allocations) -> {
-      let headers = report_columns |> list.map(header_to_label)
-
-      allocations
-      |> list.map(sale_allocation_to_report_line)
-      |> list.prepend(headers)
+    Ok(report) -> {
+      list.append([report.headers], report.rows)
       |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
+    }
+    Error(err) -> {
+      error_to_string(err)
+    }
+  }
+}
+
+pub fn report_table(transactions: List(Transaction)) {
+  let result = generic_report(transactions)
+
+  case result {
+    Ok(report) -> {
+      let config =
+        gtabler.TableConfig(
+          separator: "|",
+          border_char: "-",
+          header_color: fn(text) { text },
+          cell_color: fn(text) { text },
+        )
+
+      gtabler.print_table(config, report.headers, report.rows)
     }
     Error(err) -> {
       error_to_string(err)
@@ -168,14 +204,14 @@ pub fn report(transactions: List(Transaction)) {
 fn header_to_label(column: ReportColumn) {
   case column {
     ColBuyDate -> "Buy date"
-    ColBuyPriceEach -> "Buy price each"
-    ColBuyPriceTotal -> "Buy price total"
-    ColCapitalGain -> "Capital gain"
+    ColBuyPriceEach -> "Buy unit"
+    ColBuyPriceTotal -> "Buy total"
+    ColCapitalGain -> "Gain"
     ColCoin -> "Coin"
-    ColQty -> "Quantity"
+    ColQty -> "Qty"
     ColSaleDate -> "Sale date"
-    ColSalePriceEach -> "Sale price each"
-    ColSalePriceTotal -> "Sale price total"
+    ColSalePriceEach -> "Sale unit"
+    ColSalePriceTotal -> "Sale total"
   }
 }
 

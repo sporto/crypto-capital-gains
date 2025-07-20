@@ -23,7 +23,7 @@ pub fn one_sale_has_less_test() {
       price_each: 0.6,
     ),
   ]
-  |> transactions.report()
+  |> transactions.report_table()
   |> birdie.snap("Simple sale with less")
 }
 
@@ -48,7 +48,7 @@ pub fn two_sales_have_less_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report()
+  |> transactions.report_table()
   |> birdie.snap("Two sales have less")
 }
 
@@ -73,7 +73,7 @@ pub fn two_sales_have_exact_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report()
+  |> transactions.report_table()
   |> birdie.snap("Two sales have exact")
 }
 
@@ -98,7 +98,7 @@ pub fn two_sales_have_too_much_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report
+  |> transactions.report_table
   |> birdie.snap("Two sales have too much")
 }
 
@@ -123,7 +123,7 @@ pub fn two_buys_one_sale_test() {
       price_each: 1.0,
     ),
   ]
-  |> transactions.report
+  |> transactions.report_table
   |> birdie.snap("Two buys one sale")
 }
 
@@ -154,6 +154,6 @@ pub fn two_buys_two_sales_test() {
       price_each: 2.0,
     ),
   ]
-  |> transactions.report
+  |> transactions.report_table
   |> birdie.snap("Two buys, two sales")
 }
