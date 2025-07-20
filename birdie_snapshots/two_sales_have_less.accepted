@@ -1,9 +1,20 @@
 ---
 version: 1.3.1
 title: Two sales have less
-file: ./test/transactions_test.gleam
-test_name: two_sales_have_less_test
 ---
-Coin,Buy date,Sale date,Quantity,Buy price each,Buy price total,Sale price each,Sale price total,Capital gain
-XRP,2020-02-01,2020-02-04,60.0,0.5,30.0,0.6,36.0,6.0
-XRP,2020-02-01,2020-02-04,30.0,0.5,15.0,0.9,27.0,12.0
+# Two sales have less
+
+## Transactions
+
+Date      |Coin|Kind|Qty  |Each|Total
+----------|----|----|-----|----|-----
+2020-02-01|XRP |Buy |100.0|0.5 |50.0 
+2020-02-04|XRP |Sale|60.0 |0.6 |36.0 
+2020-02-04|XRP |Sale|30.0 |0.9 |27.0 
+
+## Allocations
+
+Coin|Buy date  |Sale date |Qty |Buy unit|Buy total|Sale unit|Sale total|Gain
+----|----------|----------|----|--------|---------|---------|----------|----
+XRP |2020-02-01|2020-02-04|60.0|0.5     |30.0     |0.6      |36.0      |6.0 
+XRP |2020-02-01|2020-02-04|30.0|0.5     |15.0     |0.9      |27.0      |12.0

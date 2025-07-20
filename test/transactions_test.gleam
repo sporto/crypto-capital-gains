@@ -1,11 +1,28 @@
 import birdie
 import gleam/time/calendar.{Date}
 import gleeunit
-import transactions.{make_buy, make_sale}
+import transactions.{type Transaction, make_buy, make_sale}
 import youid/uuid.{v4}
 
 pub fn main() -> Nil {
   gleeunit.main()
+}
+
+fn assert_report(transactions: List(Transaction), label: String) {
+  let transaction_table = transactions.transactions_table(transactions)
+
+  let report = transactions.report_table(transactions)
+
+  let output =
+    "# "
+    <> label
+    <> "\n\n## Transactions\n\n"
+    <> transaction_table
+    <> "\n\n## Allocations\n\n"
+    <> report
+
+  output
+  |> birdie.snap(label)
 }
 
 pub fn one_sale_has_less_test() {
@@ -23,8 +40,7 @@ pub fn one_sale_has_less_test() {
       price_each: 0.6,
     ),
   ]
-  |> transactions.report_table()
-  |> birdie.snap("Simple sale with less")
+  |> assert_report("Simple sale with less")
 }
 
 pub fn two_sales_have_less_test() {
@@ -48,8 +64,7 @@ pub fn two_sales_have_less_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report_table()
-  |> birdie.snap("Two sales have less")
+  |> assert_report("Two sales have less")
 }
 
 pub fn two_sales_have_exact_test() {
@@ -73,8 +88,7 @@ pub fn two_sales_have_exact_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report_table()
-  |> birdie.snap("Two sales have exact")
+  |> assert_report("Two sales have exact")
 }
 
 pub fn two_sales_have_too_much_test() {
@@ -98,8 +112,7 @@ pub fn two_sales_have_too_much_test() {
       price_each: 0.9,
     ),
   ]
-  |> transactions.report_table
-  |> birdie.snap("Two sales have too much")
+  |> assert_report("Two sales have too much")
 }
 
 pub fn two_buys_one_sale_test() {
@@ -114,7 +127,7 @@ pub fn two_buys_one_sale_test() {
       date: Date(2020, calendar.February, 2),
       coin: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price_each: 0.6,
     ),
     make_sale(
       date: Date(2020, calendar.February, 4),
@@ -123,8 +136,7 @@ pub fn two_buys_one_sale_test() {
       price_each: 1.0,
     ),
   ]
-  |> transactions.report_table
-  |> birdie.snap("Two buys one sale")
+  |> assert_report("Two buys one sale")
 }
 
 pub fn two_buys_two_sales_test() {
@@ -154,6 +166,5 @@ pub fn two_buys_two_sales_test() {
       price_each: 2.0,
     ),
   ]
-  |> transactions.report_table
-  |> birdie.snap("Two buys, two sales")
+  |> assert_report("Two buys, two sales")
 }

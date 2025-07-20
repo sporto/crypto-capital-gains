@@ -15,6 +15,13 @@ pub type Kind {
   Sale
 }
 
+fn kind_to_label(kind: Kind) {
+  case kind {
+    Buy -> "Buy"
+    Sale -> "Sale"
+  }
+}
+
 pub type Transaction {
   Transaction(
     date: calendar.Date,
@@ -152,6 +159,61 @@ type GenericReport {
   GenericReport(headers: List(String), rows: List(List(String)))
 }
 
+type TransactionCol {
+  TransactionColCoin
+  TransactionColDate
+  TransactionColKind
+  TransactionColPriceEach
+  TransactionColPriceTotal
+  TransactionColQty
+}
+
+const transaction_columns = [
+  TransactionColDate,
+  TransactionColCoin,
+  TransactionColKind,
+  TransactionColQty,
+  TransactionColPriceEach,
+  TransactionColPriceTotal,
+]
+
+pub fn transactions_table(transactions: List(Transaction)) {
+  let headers = transaction_columns |> list.map(transaction_col_header_to_label)
+
+  let rows =
+    transactions
+    |> list.map(transaction_to_table_row)
+
+  gtabler.print_table(table_config(), headers, rows)
+}
+
+fn transaction_col_header_to_label(col: TransactionCol) {
+  case col {
+    TransactionColCoin -> "Coin"
+    TransactionColDate -> "Date"
+    TransactionColKind -> "Kind"
+    TransactionColPriceEach -> "Each"
+    TransactionColPriceTotal -> "Total"
+    TransactionColQty -> "Qty"
+  }
+}
+
+fn transaction_to_table_row(transaction: Transaction) {
+  transaction_columns
+  |> list.map(transaction_to_table_cell(_, transaction))
+}
+
+fn transaction_to_table_cell(col: TransactionCol, transaction: Transaction) {
+  case col {
+    TransactionColCoin -> transaction.coin
+    TransactionColDate -> transaction.date |> date_to_label
+    TransactionColKind -> transaction.kind |> kind_to_label
+    TransactionColPriceEach -> transaction.price_each |> float.to_string
+    TransactionColPriceTotal -> transaction.price_total |> float.to_string
+    TransactionColQty -> transaction.qty |> float.to_string
+  }
+}
+
 fn generic_report(transactions: List(Transaction)) {
   use allocations <- result.try(calculate_sale_allocations(transactions))
 
@@ -166,7 +228,7 @@ fn generic_report(transactions: List(Transaction)) {
   Ok(report)
 }
 
-pub fn report(transactions: List(Transaction)) {
+pub fn report_csv(transactions: List(Transaction)) {
   let result = generic_report(transactions)
 
   case result {
@@ -185,13 +247,7 @@ pub fn report_table(transactions: List(Transaction)) {
 
   case result {
     Ok(report) -> {
-      let config =
-        gtabler.TableConfig(
-          separator: "|",
-          border_char: "-",
-          header_color: fn(text) { text },
-          cell_color: fn(text) { text },
-        )
+      let config = table_config()
 
       gtabler.print_table(config, report.headers, report.rows)
     }
@@ -199,6 +255,15 @@ pub fn report_table(transactions: List(Transaction)) {
       error_to_string(err)
     }
   }
+}
+
+fn table_config() {
+  gtabler.TableConfig(
+    separator: "|",
+    border_char: "-",
+    header_color: fn(text) { text },
+    cell_color: fn(text) { text },
+  )
 }
 
 fn header_to_label(column: ReportColumn) {
