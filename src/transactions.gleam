@@ -1,4 +1,5 @@
 import given
+import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/io
@@ -6,10 +7,10 @@ import gleam/list
 import gleam/order
 import gleam/result
 import gleam/string
-import gleam/time/calendar.{type Date}
-import gleam/time/timestamp
 import gsv
 import gtabler
+import simplifile
+import tempo.{type Date}
 import youid/uuid.{type Uuid}
 
 pub type Kind {
@@ -24,9 +25,17 @@ fn kind_to_label(kind: Kind) {
   }
 }
 
+fn kind_from_code(code: String) {
+  case string.uppercase(code) {
+    "BUY" -> Ok(Buy)
+    "SALE" -> Ok(Sale)
+    _ -> Error("Invalid transaction code " <> code)
+  }
+}
+
 pub type Transaction {
   Transaction(
-    date: calendar.Date,
+    date: Date,
     id: Uuid,
     coin: String,
     kind: Kind,
@@ -74,7 +83,7 @@ pub fn make_sale(
 
 pub type SaleAllocation {
   SaleAllocation(
-    buy_date: calendar.Date,
+    buy_date: Date,
     buy_price_each: Float,
     buy_price_total: Float,
     buy_transaction_id: Uuid,
@@ -82,7 +91,7 @@ pub type SaleAllocation {
     coin: String,
     id: Uuid,
     qty: Float,
-    sale_date: calendar.Date,
+    sale_date: Date,
     sale_transaction_id: Uuid,
     sale_price_each: Float,
     sale_price_total: Float,
@@ -115,14 +124,6 @@ const report_columns = [
 
 pub type Acc {
   Acc(allocations: List(SaleAllocation))
-}
-
-pub type Error {
-  NoBuyTransactionsLeft
-}
-
-fn error_to_label(_e: Error) {
-  "No Buy Transactions Left"
 }
 
 fn calculate_sale_allocations(transactions: List(Transaction)) {
@@ -239,7 +240,7 @@ pub fn report_csv(transactions: List(Transaction)) {
       |> gsv.from_lists(separator: ",", line_ending: gsv.Unix)
     }
     Error(err) -> {
-      "Error: " <> error_to_label(err)
+      "Error: " <> err
     }
   }
 }
@@ -254,7 +255,7 @@ pub fn report_table(transactions: List(Transaction)) {
       gtabler.print_table(config, report.headers, report.rows)
     }
     Error(err) -> {
-      "Error: " <> error_to_label(err)
+      "Error: " <> err
     }
   }
 }
@@ -311,17 +312,7 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
 }
 
 fn date_to_label(date: Date) {
-  let year = int.to_string(date.year)
-
-  let month =
-    int.to_string(calendar.month_to_int(date.month))
-    |> string.pad_start(2, "0")
-
-  let day =
-    int.to_string(date.day)
-    |> string.pad_start(2, "0")
-
-  year <> "-" <> month <> "-" <> day
+  date.to_string(date)
 }
 
 fn allocate_sale_transaction(
@@ -353,16 +344,11 @@ fn allocate_sale_transaction(
   case relevant_buy_transactions {
     [buy_transaction, ..rest_buy_transactions] -> {
       // buy transaction must be before sale transaction
-      let buy_timestamp = date_to_timestamp(buy_transaction.date)
 
-      let sale_timestamp = date_to_timestamp(sale_transaction.date)
+      let buy_is_earlier_or_equal =
+        date.is_earlier_or_equal(buy_transaction.date, sale_transaction.date)
 
-      let buy_is_same = buy_timestamp == sale_timestamp
-
-      let buy_is_before =
-        timestamp.compare(buy_timestamp, sale_timestamp) == order.Lt
-
-      use <- given.that(buy_is_same || buy_is_before, else_return: fn() {
+      use <- given.that(buy_is_earlier_or_equal, else_return: fn() {
         allocate_sale_transaction(
           sale_transaction,
           rest_buy_transactions,
@@ -441,8 +427,7 @@ fn allocate_sale_transaction(
       )
     }
     _ -> {
-      let error = NoBuyTransactionsLeft
-      Error(error)
+      Error("No buy transactions left")
     }
   }
 }
@@ -463,13 +448,98 @@ pub fn format_amount(amount: Float) -> String {
   left <> "." <> decimals
 }
 
-/// Only used for comparisons
-fn date_to_timestamp(date: Date) {
-  timestamp.from_calendar(
-    date,
-    time: calendar.TimeOfDay(0, 0, 0, 0),
-    offset: calendar.utc_offset,
+import tempo/date
+import tempo/error.{type DateParseError}
+
+fn date_parse_error_to_label(error: DateParseError) {
+  case error {
+    error.DateInvalidFormat(input) -> "Invalid date format " <> input
+    error.DateOutOfBounds(input, _) -> "Date out of bounds " <> input
+  }
+}
+
+fn parse_date(input: String) -> Result(Date, String) {
+  date.parse(input, tempo.CustomDate("DD/MM/YYYY"))
+  |> result.map_error(date_parse_error_to_label)
+}
+
+fn parse_input(content: String) {
+  use csv <- result.try(
+    gsv.to_dicts(content, ",") |> result.replace_error("Unable to parse CSV"),
   )
+
+  list.try_map(csv, parse_input_line)
+}
+
+fn parse_input_line(row: dict.Dict(String, String)) {
+  use coin <- result.try(
+    dict.get(row, "coin") |> result.replace_error("Couldn't find coin"),
+  )
+
+  use date_str <- result.try(
+    dict.get(row, "date") |> result.replace_error("Couldn't find date"),
+  )
+
+  use kind_str <- result.try(
+    dict.get(row, "kind") |> result.replace_error("Couldn't find kind"),
+  )
+
+  use qty_str <- result.try(
+    dict.get(row, "qty") |> result.replace_error("Couldn't find qty"),
+  )
+
+  use price_each_str <- result.try(
+    dict.get(row, "price_each")
+    |> result.replace_error("Couldn't find price_each"),
+  )
+
+  use price_total_str <- result.try(
+    dict.get(row, "price_total")
+    |> result.replace_error("Couldn't find price_total"),
+  )
+
+  use date <- result.try(parse_date(date_str))
+
+  use kind <- result.try(kind_from_code(kind_str))
+
+  use price_each <- result.try(
+    price_each_str
+    |> string.replace("$", "")
+    |> parse_float,
+  )
+
+  use price_total <- result.try(
+    price_total_str |> string.replace("$", "") |> parse_float,
+  )
+
+  use qty <- result.try(qty_str |> parse_float)
+
+  let transaction =
+    Transaction(
+      coin:,
+      date:,
+      id: uuid.v4(),
+      kind:,
+      price_each:,
+      price_total:,
+      qty:,
+    )
+
+  Ok(transaction)
+}
+
+fn parse_float(input: String) {
+  float.parse(input) |> result.replace_error("Unable to parse " <> input)
+}
+
+fn read_input(file_path: String) {
+  use content <- result.try(
+    simplifile.read(from: file_path)
+    |> result.replace_error("Unable to read " <> file_path),
+  )
+
+  use input <- result.try(parse_input(content))
+  Ok(1)
 }
 
 pub fn main() -> Nil {

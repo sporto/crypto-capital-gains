@@ -9,10 +9,10 @@ title: Simple sale with less
 Date      |Coin|Kind|Qty  |Each|Total
 ----------|----|----|-----|----|-----
 2020-02-01|XRP |Buy |100.0|0.5 |50.0 
-2020-02-04|XRP |Sale|60.0 |0.6 |36.0 
+2020-02-02|XRP |Sale|60.0 |0.6 |36.0 
 
 ## Allocations
 
 Coin|Buy date  |Sale date |Qty |Buy unit|Buy total|Sale unit|Sale total|Gain
 ----|----------|----------|----|--------|---------|---------|----------|----
-XRP |2020-02-01|2020-02-04|60.0|0.5     |30.0     |0.6      |36.0      |6.0 
+XRP |2020-02-01|2020-02-02|60.0|0.5     |30.0     |0.6      |36.0      |6.0 
