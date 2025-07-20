@@ -210,9 +210,9 @@ fn transaction_to_table_cell(col: TransactionCol, transaction: Transaction) {
     TransactionColCoin -> transaction.coin
     TransactionColDate -> transaction.date |> date_to_label
     TransactionColKind -> transaction.kind |> kind_to_label
-    TransactionColPriceEach -> transaction.price_each |> float.to_string
-    TransactionColPriceTotal -> transaction.price_total |> float.to_string
-    TransactionColQty -> transaction.qty |> float.to_string
+    TransactionColPriceEach -> transaction.price_each |> format_amount
+    TransactionColPriceTotal -> transaction.price_total |> format_amount
+    TransactionColQty -> transaction.qty |> format_amount
   }
 }
 
@@ -289,24 +289,24 @@ fn sale_allocation_to_report_line(allocation: SaleAllocation) {
 fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation) {
   case column {
     ColBuyDate -> allocation.buy_date |> date_to_label
-    ColBuyPriceEach -> allocation.buy_price_each |> float.to_string
+    ColBuyPriceEach -> allocation.buy_price_each |> format_amount
     ColBuyPriceTotal ->
       allocation.buy_price_total
-      |> float.to_string
+      |> format_amount
     ColCapitalGain ->
       allocation.capital_gain
-      |> float.to_string
+      |> format_amount
     ColCoin -> allocation.coin
     ColQty ->
       allocation.qty
-      |> float.to_string
+      |> format_amount
     ColSaleDate -> allocation.sale_date |> date_to_label
     ColSalePriceEach ->
       allocation.sale_price_each
-      |> float.to_string
+      |> format_amount
     ColSalePriceTotal ->
       allocation.sale_price_total
-      |> float.to_string
+      |> format_amount
   }
 }
 
@@ -445,6 +445,22 @@ fn allocate_sale_transaction(
       Error(error)
     }
   }
+}
+
+// Qty or currency
+pub fn format_amount(amount: Float) -> String {
+  let left =
+    float.truncate(amount)
+    |> int.to_string
+
+  let decimals =
+    amount
+    |> float.absolute_value
+    |> float.min(1.0)
+    |> float.to_string
+    |> string.drop_start(2)
+
+  left <> "." <> decimals
 }
 
 /// Only used for comparisons

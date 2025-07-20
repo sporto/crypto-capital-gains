@@ -8,6 +8,11 @@ pub fn main() -> Nil {
   gleeunit.main()
 }
 
+pub fn format_amount_test() {
+  assert transactions.format_amount(600.1234) == "600.123"
+  assert transactions.format_amount(-600.1234) == "-600.123"
+}
+
 fn assert_report(transactions: List(Transaction), label: String) {
   let transaction_table = transactions.transactions_table(transactions)
 
@@ -185,4 +190,40 @@ pub fn order_matters_test() {
     ),
   ]
   |> assert_report("Buy must be before")
+}
+
+pub fn mixed_test() {
+  [
+    make_buy(
+      date: Date(2020, calendar.February, 1),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+    ),
+    make_buy(
+      date: Date(2020, calendar.February, 2),
+      coin: "SOL",
+      qty: 100.0,
+      price_each: 50.0,
+    ),
+    make_sale(
+      date: Date(2020, calendar.February, 4),
+      coin: "XRP",
+      qty: 50.0,
+      price_each: 0.75,
+    ),
+    make_buy(
+      date: Date(2020, calendar.February, 5),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.6,
+    ),
+    make_sale(
+      date: Date(2020, calendar.February, 6),
+      coin: "SOL",
+      qty: 50.0,
+      price_each: 40.0,
+    ),
+  ]
+  |> assert_report("Mixed coins")
 }
