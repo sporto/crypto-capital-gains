@@ -104,6 +104,7 @@ pub type SaleAllocation {
 }
 
 type ReportColumn {
+  ColFY
   ColCoin
   ColBuyDate
   ColSaleDate
@@ -116,9 +117,10 @@ type ReportColumn {
 }
 
 const report_columns = [
+  ColFY,
+  ColSaleDate,
   ColCoin,
   ColBuyDate,
-  ColSaleDate,
   ColQty,
   ColBuyPriceEach,
   ColBuyPriceTotal,
@@ -274,6 +276,7 @@ fn header_to_label(column: ReportColumn) {
     ColBuyPriceTotal -> "Buy total"
     ColCapitalGain -> "Gain"
     ColCoin -> "Coin"
+    ColFY -> "FY"
     ColQty -> "Qty"
     ColSaleDate -> "Sale date"
     ColSalePriceEach -> "Sale unit"
@@ -287,6 +290,7 @@ fn sale_allocation_to_report_line(allocation: SaleAllocation) {
 
 fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation) {
   case column {
+    ColFY -> allocation.sale_date |> date_to_financial_year
     ColBuyDate -> allocation.buy_date |> date_to_label
     ColBuyPriceEach -> allocation.buy_price_each |> format_amount
     ColBuyPriceTotal ->
@@ -311,6 +315,20 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
 
 fn date_to_label(date: Date) {
   date.to_string(date)
+}
+
+import tempo/month
+
+fn date_to_financial_year(date: Date) {
+  let month = date.get_month(date) |> month.to_int
+  let year = date.get_year(date)
+
+  let fy = case month > 6 {
+    True -> year + 1
+    False -> year
+  }
+
+  "FY" <> int.to_string(fy)
 }
 
 fn allocate_sale_transaction(
@@ -469,7 +487,7 @@ fn date_parse_error_to_label(error: DateParseError) {
 }
 
 fn parse_date(input: String) -> outcome.Outcome(Date, String) {
-  date.parse(input, tempo.CustomDate("DD/MM/YYYY"))
+  date.parse(input, tempo.CustomDate("YYYY-MM-DD"))
   |> result.map_error(date_parse_error_to_label)
   |> outcome
   |> outcome.context("When parsing " <> input)
@@ -572,13 +590,33 @@ fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
   Ok(transaction)
 }
 
-fn parse_float(input: String) {
+fn parse_int(input: String) {
   input
   |> string.trim
   |> string.replace(",", "")
-  |> float.parse
-  |> result.replace_error("Unable to parse float " <> input)
+  |> int.parse
+  |> result.replace_error("Unable to parse int " <> input)
   |> outcome
+}
+
+fn parse_float(input: String) {
+  let result =
+    input
+    |> string.trim
+    |> string.replace(",", "")
+    |> float.parse
+    |> result.replace_error("Unable to parse float " <> input)
+    |> outcome
+
+  case result {
+    Ok(float) -> Ok(float)
+    Error(float_err) -> {
+      case parse_int(input) {
+        Ok(int) -> Ok(int.to_float(int))
+        Error(_) -> Error(float_err)
+      }
+    }
+  }
 }
 
 fn read_input(file_path: String) -> Outcome(List(Transaction), String) {
