@@ -4,6 +4,7 @@
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
   { name = "birdie", version = "1.3.1", build_tools = ["gleam"], requirements = ["argv", "edit_distance", "filepath", "glance", "gleam_community_ansi", "gleam_stdlib", "justin", "rank", "simplifile", "term_size", "trie_again"], otp_app = "birdie", source = "hex", outer_checksum = "F811C9EDAF920EF48597A26E788907AAF80D9239A5E8C8CCFBD0DD1BB10184D7" },
+  { name = "clip", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "clip", source = "hex", outer_checksum = "669BEA23D067F89B274A0E869533D2EC7C0DB1B5E650A03439C4558749945E94" },
   { name = "edit_distance", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "edit_distance", source = "hex", outer_checksum = "A1E485C69A70210223E46E63985FA1008B8B2DDA9848B7897469171B29020C05" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
   { name = "given", version = "5.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "given", source = "hex", outer_checksum = "4CA910387611906E79EC475994570B086E4947A163C5A3DD741BDBDB0D9B5DD4" },
@@ -22,6 +23,7 @@ packages = [
   { name = "gtabler", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gtabler", source = "hex", outer_checksum = "2812D34DB10FE5E7B1BCC13E3D54DC73A4C2EF44267DFBA49492F5B6EC6B5563" },
   { name = "gtempo", version = "7.2.2", build_tools = ["gleam"], requirements = ["gleam_regexp", "gleam_stdlib", "gleam_time"], otp_app = "gtempo", source = "hex", outer_checksum = "51AACF841C5F936455973BAF7C03F1EEBF86EC0F0F8D9EBEE126CB02968D50AC" },
   { name = "justin", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "justin", source = "hex", outer_checksum = "7FA0C6DB78640C6DC5FBFD59BF3456009F3F8B485BF6825E97E1EB44E9A1E2CD" },
+  { name = "outcome", version = "4.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "outcome", source = "hex", outer_checksum = "491DF7AC8F39E86857CF66E5FC5ADA2CC43D44EA23B26D4A6573ADA961E47A70" },
   { name = "rank", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "rank", source = "hex", outer_checksum = "5660E361F0E49CBB714CC57CC4C89C63415D8986F05B2DA0C719D5642FAD91C9" },
   { name = "simplifile", version = "2.3.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0A868DAC6063D9E983477981839810DC2E553285AB4588B87E3E9C96A7FB4CB4" },
   { name = "term_size", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "term_size", source = "hex", outer_checksum = "D00BD2BC8FB3EBB7E6AE076F3F1FF2AC9D5ED1805F004D0896C784D06C6645F1" },
@@ -30,12 +32,15 @@ packages = [
 ]
 
 [requirements]
+argv = { version = ">= 1.0.2 and < 2.0.0" }
 birdie = { version = ">= 1.3.1 and < 2.0.0" }
+clip = { version = ">= 1.0.0 and < 2.0.0" }
 given = { version = ">= 5.1.0 and < 6.0.0" }
 gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 gsv = { version = ">= 4.0.0 and < 5.0.0" }
 gtabler = { version = ">= 1.0.0 and < 2.0.0" }
 gtempo = { version = ">= 7.2.2 and < 8.0.0" }
+outcome = { version = ">= 4.0.0 and < 5.0.0" }
 simplifile = { version = ">= 2.3.0 and < 3.0.0" }
 youid = { version = ">= 1.5.1 and < 2.0.0" }

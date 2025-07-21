@@ -1,5 +1,7 @@
 import birdie
+import gleam/function
 import gleeunit
+import outcome
 import tempo/date
 import transactions.{type Transaction, make_buy, make_sale}
 
@@ -37,7 +39,7 @@ fn assert_report(transactions: List(Transaction), label: String) {
 
   let report = case transactions.report_table(transactions) {
     Ok(report) -> report
-    Error(err) -> "Error: " <> err
+    Error(err) -> "Error: " <> outcome.print_line(err, function.identity)
   }
 
   let output =

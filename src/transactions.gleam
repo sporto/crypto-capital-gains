@@ -1,14 +1,19 @@
+import argv
+import clip.{type Command}
+import clip/help
+import clip/opt.{type Opt}
 import given
 import gleam/dict
 import gleam/float
+import gleam/function
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/order
 import gleam/result
 import gleam/string
 import gsv
 import gtabler
+import outcome.{type Outcome, outcome}
 import simplifile
 import tempo.{type Date}
 import youid/uuid.{type Uuid}
@@ -36,7 +41,7 @@ fn kind_from_code(code: String) {
 pub type Transaction {
   Transaction(
     date: Date,
-    id: Uuid,
+    id: String,
     coin: String,
     kind: Kind,
     qty: Float,
@@ -53,7 +58,7 @@ pub fn make_transaction(
   price_each price_each: Float,
 ) {
   Transaction(
-    id: uuid.v4(),
+    id: uuid.v4() |> uuid.to_string,
     date:,
     coin:,
     kind:,
@@ -86,13 +91,13 @@ pub type SaleAllocation {
     buy_date: Date,
     buy_price_each: Float,
     buy_price_total: Float,
-    buy_transaction_id: Uuid,
+    buy_transaction_id: String,
     capital_gain: Float,
     coin: String,
     id: Uuid,
     qty: Float,
     sale_date: Date,
-    sale_transaction_id: Uuid,
+    sale_transaction_id: String,
     sale_price_each: Float,
     sale_price_total: Float,
   )
@@ -122,11 +127,18 @@ const report_columns = [
   ColCapitalGain,
 ]
 
+pub fn with_context(error_context, next) {
+  next()
+  |> outcome.context(error_context)
+}
+
 pub type Acc {
   Acc(allocations: List(SaleAllocation))
 }
 
-fn calculate_sale_allocations(transactions: List(Transaction)) {
+fn calculate_sale_allocations(
+  transactions: List(Transaction),
+) -> Outcome(List(SaleAllocation), String) {
   let #(buy_transactions, sale_transactions) =
     transactions |> list.partition(fn(t) { t.kind == Buy })
 
@@ -305,7 +317,9 @@ fn allocate_sale_transaction(
   sale_transaction: Transaction,
   relevant_buy_transactions: List(Transaction),
   allocations_for_this_coin: List(SaleAllocation),
-) {
+) -> Outcome(List(SaleAllocation), String) {
+  use <- with_context("sale_transaction " <> sale_transaction.id)
+
   let allocations_for_this_sale_transaction =
     allocations_for_this_coin
     |> list.filter(fn(alloc) {
@@ -414,6 +428,14 @@ fn allocate_sale_transaction(
     }
     _ -> {
       Error("No buy transactions left")
+      |> outcome
+      |> outcome.context(
+        "qty_allocated_so_far " <> float.to_string(qty_allocated_so_far),
+      )
+      |> outcome.context(
+        "remainding_qty_to_allocate "
+        <> float.to_string(remainding_qty_to_allocate),
+      )
     }
   }
 }
@@ -446,92 +468,133 @@ fn date_parse_error_to_label(error: DateParseError) {
   }
 }
 
-fn parse_date(input: String) -> Result(Date, String) {
+fn parse_date(input: String) -> outcome.Outcome(Date, String) {
   date.parse(input, tempo.CustomDate("DD/MM/YYYY"))
   |> result.map_error(date_parse_error_to_label)
+  |> outcome
+  |> outcome.context("When parsing " <> input)
 }
 
 fn parse_input(content: String) {
   use csv <- result.try(
-    gsv.to_dicts(content, ",") |> result.replace_error("Unable to parse CSV"),
+    gsv.to_dicts(content, ",")
+    |> result.replace_error("Unable to parse CSV")
+    |> outcome,
   )
 
-  list.try_map(csv, parse_input_line)
+  csv
+  |> list.index_map(fn(line, ix) { #(ix + 2, line) })
+  |> list.try_map(parse_input_line)
 }
 
-fn parse_input_line(row: dict.Dict(String, String)) {
+fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
+  let #(line_index, row) = tuple
+
+  use <- with_context("line " <> int.to_string(line_index))
+
+  use id <- result.try(
+    dict.get(row, "id")
+    |> result.replace_error("Couldn't find id")
+    |> outcome
+    |> outcome.context("id"),
+  )
+
   use coin <- result.try(
-    dict.get(row, "coin") |> result.replace_error("Couldn't find coin"),
+    dict.get(row, "coin")
+    |> result.replace_error("Couldn't find coin")
+    |> outcome
+    |> outcome.context("coin"),
   )
 
   use date_str <- result.try(
-    dict.get(row, "date") |> result.replace_error("Couldn't find date"),
+    dict.get(row, "date")
+    |> result.replace_error("Couldn't find date")
+    |> outcome
+    |> outcome.context("date"),
   )
 
   use kind_str <- result.try(
-    dict.get(row, "kind") |> result.replace_error("Couldn't find kind"),
+    dict.get(row, "kind")
+    |> result.replace_error("Couldn't find kind")
+    |> outcome
+    |> outcome.context("kind"),
   )
 
   use qty_str <- result.try(
-    dict.get(row, "qty") |> result.replace_error("Couldn't find qty"),
+    dict.get(row, "qty")
+    |> result.replace_error("Couldn't find qty")
+    |> outcome
+    |> outcome.context("qty"),
   )
 
   use price_each_str <- result.try(
     dict.get(row, "price_each")
-    |> result.replace_error("Couldn't find price_each"),
+    |> result.replace_error("Couldn't find price_each")
+    |> outcome
+    |> outcome.context("price_each"),
   )
 
   use price_total_str <- result.try(
     dict.get(row, "price_total")
-    |> result.replace_error("Couldn't find price_total"),
+    |> result.replace_error("Couldn't find price_total")
+    |> outcome
+    |> outcome.context("price_total"),
   )
 
-  use date <- result.try(parse_date(date_str))
+  use date <- result.try(
+    parse_date(date_str)
+    |> outcome.context("date"),
+  )
 
-  use kind <- result.try(kind_from_code(kind_str))
+  use kind <- result.try(
+    kind_from_code(kind_str) |> outcome |> outcome.context("kind"),
+  )
 
   use price_each <- result.try(
     price_each_str
     |> string.replace("$", "")
-    |> parse_float,
+    |> parse_float
+    |> outcome.context("price_each"),
   )
 
   use price_total <- result.try(
-    price_total_str |> string.replace("$", "") |> parse_float,
+    price_total_str
+    |> string.replace("$", "")
+    |> parse_float
+    |> outcome.context("price_total"),
   )
 
-  use qty <- result.try(qty_str |> parse_float)
+  use qty <- result.try(qty_str |> parse_float |> outcome.context("qty"))
 
   let transaction =
-    Transaction(
-      coin:,
-      date:,
-      id: uuid.v4(),
-      kind:,
-      price_each:,
-      price_total:,
-      qty:,
-    )
+    Transaction(coin:, date:, id:, kind:, price_each:, price_total:, qty:)
 
   Ok(transaction)
 }
 
 fn parse_float(input: String) {
-  float.parse(input) |> result.replace_error("Unable to parse " <> input)
+  input
+  |> string.trim
+  |> string.replace(",", "")
+  |> float.parse
+  |> result.replace_error("Unable to parse float " <> input)
+  |> outcome
 }
 
-fn read_input(file_path: String) -> Result(List(Transaction), String) {
+fn read_input(file_path: String) -> Outcome(List(Transaction), String) {
   use content <- result.try(
     simplifile.read(from: file_path)
-    |> result.replace_error("Unable to read " <> file_path),
+    |> result.replace_error("Unable to read " <> file_path)
+    |> outcome,
   )
 
   parse_input(content)
 }
 
-fn write_output(report: String, file_path: String) {
+fn write_output(report: String, file_path: String) -> Outcome(Nil, String) {
   simplifile.write(to: file_path, contents: report)
   |> result.replace_error("Unable to write to " <> file_path)
+  |> outcome
 }
 
 fn process_file(in_path: String, out_path: String) {
@@ -541,6 +604,36 @@ fn process_file(in_path: String, out_path: String) {
   Ok("Done")
 }
 
+type CliArgs {
+  CliArgs(file: String)
+}
+
+fn file_opt() -> Opt(String) {
+  opt.new("file") |> opt.help("File to process")
+}
+
+fn command() -> Command(CliArgs) {
+  clip.command({
+    use file <- clip.parameter
+
+    CliArgs(file)
+  })
+  |> clip.opt(file_opt())
+}
+
 pub fn main() -> Nil {
-  io.println("Hello from transactions!")
+  let result =
+    command()
+    |> clip.help(help.simple("file", "Process a file"))
+    |> clip.run(argv.load().arguments)
+
+  use args <- given.ok(result, else_return: fn(e) { io.println_error(e) })
+
+  let in_path = "./.input/" <> args.file
+  let out_path = "./.output/" <> args.file
+
+  case process_file(in_path, out_path) {
+    Ok(message) -> io.println(message)
+    Error(e) -> io.println_error(outcome.print_line(e, function.identity))
+  }
 }
