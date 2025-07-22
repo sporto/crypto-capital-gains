@@ -6,11 +6,11 @@ title: Two sales have too much
 
 ## Transactions
 
-Id|Date      |Coin|Kind|Qty  |Each|Total
---|----------|----|----|-----|----|-----
-a |2020-02-01|XRP |Buy |100.0|0.5 |50.0 
-b |2020-02-04|XRP |Sale|60.0 |0.6 |36.0 
-c |2020-02-04|XRP |Sale|50.0 |0.9 |45.0 
+Id|Date      |Coin|Kind|Qty  |Each|Total|Buy fee|Sale fee|Each after fee|Total after fee
+--|----------|----|----|-----|----|-----|-------|--------|--------------|---------------
+a |2020-02-01|XRP |Buy |100.0|0.5 |50.0 |0.0    |        |0.5           |50.0           
+b |2020-02-04|XRP |Sale|60.0 |0.6 |36.0 |       |0.0     |0.6           |36.0           
+c |2020-02-04|XRP |Sale|50.0 |0.9 |45.0 |       |0.0     |0.9           |45.0           
 
 ## Allocations
 

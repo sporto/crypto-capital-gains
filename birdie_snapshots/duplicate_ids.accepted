@@ -6,10 +6,10 @@ title: Duplicate ids
 
 ## Transactions
 
-Id|Date      |Coin|Kind|Qty  |Each|Total 
---|----------|----|----|-----|----|------
-a |2020-02-01|XRP |Buy |100.0|0.5 |50.0  
-a |2020-02-02|XRP |Buy |100.0|50.0|5000.0
+Id|Date      |Coin|Kind|Qty  |Each|Total |Buy fee|Sale fee|Each after fee|Total after fee
+--|----------|----|----|-----|----|------|-------|--------|--------------|---------------
+a |2020-02-01|XRP |Buy |100.0|0.5 |50.0  |0.0    |        |0.5           |50.0           
+a |2020-02-02|XRP |Buy |100.0|50.0|5000.0|0.0    |        |50.0          |5000.0         
 
 ## Allocations
 

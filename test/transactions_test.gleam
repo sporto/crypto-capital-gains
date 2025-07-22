@@ -2,11 +2,65 @@ import birdie
 import gleam/function
 import gleeunit
 import outcome
+import tempo
 import tempo/date
-import transactions.{type Transaction, make_buy, make_sale}
+import transactions.{type Transaction, Transaction}
 
 pub fn main() -> Nil {
   gleeunit.main()
+}
+
+pub fn fixture_transaction(
+  buy_fee buy_fee: Float,
+  coin coin: String,
+  date date: tempo.Date,
+  id id: String,
+  kind kind: transactions.Kind,
+  price_each price_each: Float,
+  qty qty: Float,
+  sale_fee sale_fee: Float,
+) {
+  Transaction(id:, date:, coin:, kind:, qty:, price_each:, buy_fee:, sale_fee:)
+}
+
+pub fn fixture_buy(
+  coin coin: String,
+  date date: tempo.Date,
+  fee fee: Float,
+  id id: String,
+  price_each price_each: Float,
+  qty qty: Float,
+) {
+  fixture_transaction(
+    buy_fee: fee,
+    coin:,
+    date:,
+    id:,
+    kind: transactions.Buy,
+    price_each:,
+    qty:,
+    sale_fee: 0.0,
+  )
+}
+
+pub fn fixture_sale(
+  coin coin: String,
+  date date: tempo.Date,
+  fee fee: Float,
+  id id: String,
+  price_each price_each: Float,
+  qty qty: Float,
+) {
+  fixture_transaction(
+    buy_fee: 0.0,
+    coin:,
+    date:,
+    id:,
+    kind: transactions.Sale,
+    price_each:,
+    qty:,
+    sale_fee: fee,
+  )
 }
 
 pub fn format_amount_test() {
@@ -56,81 +110,270 @@ fn assert_report(transactions: List(Transaction), label: String) {
 
 pub fn one_sale_has_less_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(id: "b", date: feb_2(), coin: "XRP", qty: 60.0, price_each: 0.6),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "b",
+      date: feb_2(),
+      coin: "XRP",
+      qty: 60.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Simple sale with less")
 }
 
 pub fn two_sales_have_less_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 30.0, price_each: 0.9),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "b",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 60.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 30.0,
+      price_each: 0.9,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Two sales have less")
 }
 
 pub fn two_sales_have_exact_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 40.0, price_each: 0.9),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "b",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 60.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 40.0,
+      price_each: 0.9,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Two sales have exact")
 }
 
 pub fn two_sales_have_too_much_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.9),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "b",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 60.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 50.0,
+      price_each: 0.9,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Two sales have too much")
 }
 
 pub fn two_buys_one_sale_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.6),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "b",
+      date: feb_2(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 150.0,
+      price_each: 1.0,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Two buys one sale")
 }
 
 pub fn two_buys_two_sales_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
-    make_sale(id: "d", date: feb_5(), coin: "XRP", qty: 50.0, price_each: 2.0),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "b",
+      date: feb_2(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 150.0,
+      price_each: 1.0,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "d",
+      date: feb_5(),
+      coin: "XRP",
+      qty: 50.0,
+      price_each: 2.0,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Two buys, two sales")
 }
 
 pub fn order_matters_test() {
   [
-    make_sale(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    fixture_sale(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "b",
+      date: feb_2(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Buy must be before")
 }
 
 pub fn mixed_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(id: "b", date: feb_2(), coin: "SOL", qty: 100.0, price_each: 50.0),
-    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.75),
-    make_buy(id: "d", date: feb_5(), coin: "XRP", qty: 100.0, price_each: 0.6),
-    make_sale(id: "e", date: feb_6(), coin: "SOL", qty: 50.0, price_each: 40.0),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "b",
+      date: feb_2(),
+      coin: "SOL",
+      qty: 100.0,
+      price_each: 50.0,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "c",
+      date: feb_4(),
+      coin: "XRP",
+      qty: 50.0,
+      price_each: 0.75,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "d",
+      date: feb_5(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.6,
+      fee: 0.0,
+    ),
+    fixture_sale(
+      id: "e",
+      date: feb_6(),
+      coin: "SOL",
+      qty: 50.0,
+      price_each: 40.0,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Mixed coins")
 }
 
 pub fn duplicate_ids_test() {
   [
-    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(id: "a", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 50.0),
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 0.5,
+      fee: 0.0,
+    ),
+    fixture_buy(
+      id: "a",
+      date: feb_2(),
+      coin: "XRP",
+      qty: 100.0,
+      price_each: 50.0,
+      fee: 0.0,
+    ),
   ]
   |> assert_report("Duplicate ids")
 }
