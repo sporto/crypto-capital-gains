@@ -108,6 +108,34 @@ fn assert_report(transactions: List(Transaction), label: String) {
   |> birdie.snap(label)
 }
 
+pub fn transactions_table_has_correct_values_test() {
+  let transactions = [
+    fixture_buy(
+      id: "a",
+      date: feb_1(),
+      coin: "SOL",
+      qty: 100.0,
+      price_each: 10.0,
+      fee: 5.0,
+    ),
+    fixture_sale(
+      id: "b",
+      date: feb_2(),
+      coin: "SOL",
+      qty: 50.0,
+      price_each: 10.0,
+      fee: 5.0,
+    ),
+  ]
+
+  let transaction_table = transactions.transactions_table(transactions)
+
+  let output = "\n\n## Transactions\n\n" <> transaction_table
+
+  output
+  |> birdie.snap("Transaction table has correct values")
+}
+
 pub fn one_sale_has_less_test() {
   [
     fixture_buy(
