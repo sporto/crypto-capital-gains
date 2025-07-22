@@ -8,4 +8,4 @@ help:
 	gleam run -- --help
 
 run:
-	gleam run -- --file seb.csv
+	gleam run -- --file seb

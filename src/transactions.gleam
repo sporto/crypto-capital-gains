@@ -10,6 +10,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/result
+import gleam/set
 import gleam/string
 import gsv
 import gtabler
@@ -51,14 +52,15 @@ pub type Transaction {
 }
 
 pub fn make_transaction(
-  date date: Date,
   coin coin: String,
+  date date: Date,
+  id id: String,
   kind kind: Kind,
-  qty qty: Float,
   price_each price_each: Float,
+  qty qty: Float,
 ) {
   Transaction(
-    id: uuid.v4() |> uuid.to_string,
+    id:,
     date:,
     coin:,
     kind:,
@@ -69,21 +71,23 @@ pub fn make_transaction(
 }
 
 pub fn make_buy(
-  date date: Date,
   coin coin: String,
-  qty qty: Float,
+  date date: Date,
+  id id: String,
   price_each price_each: Float,
+  qty qty: Float,
 ) {
-  make_transaction(date:, coin:, kind: Buy, qty:, price_each:)
+  make_transaction(date:, coin:, id:, kind: Buy, qty:, price_each:)
 }
 
 pub fn make_sale(
-  date date: Date,
   coin coin: String,
-  qty qty: Float,
+  date date: Date,
+  id id: String,
   price_each price_each: Float,
+  qty qty: Float,
 ) {
-  make_transaction(date:, coin:, kind: Sale, qty:, price_each:)
+  make_transaction(date:, coin:, id:, kind: Sale, qty:, price_each:)
 }
 
 pub type SaleAllocation {
@@ -108,6 +112,8 @@ type ReportColumn {
   ColCoin
   ColBuyDate
   ColSaleDate
+  ColBuyId
+  ColSaleId
   ColQty
   ColBuyPriceEach
   ColBuyPriceTotal
@@ -121,6 +127,8 @@ const report_columns = [
   ColSaleDate,
   ColCoin,
   ColBuyDate,
+  ColBuyId,
+  ColSaleId,
   ColQty,
   ColBuyPriceEach,
   ColBuyPriceTotal,
@@ -177,6 +185,7 @@ type GenericReport {
 }
 
 type TransactionCol {
+  TransactionColId
   TransactionColCoin
   TransactionColDate
   TransactionColKind
@@ -186,6 +195,7 @@ type TransactionCol {
 }
 
 const transaction_columns = [
+  TransactionColId,
   TransactionColDate,
   TransactionColCoin,
   TransactionColKind,
@@ -206,6 +216,7 @@ pub fn transactions_table(transactions: List(Transaction)) {
 
 fn transaction_col_header_to_label(col: TransactionCol) {
   case col {
+    TransactionColId -> "Id"
     TransactionColCoin -> "Coin"
     TransactionColDate -> "Date"
     TransactionColKind -> "Kind"
@@ -222,6 +233,7 @@ fn transaction_to_table_row(transaction: Transaction) {
 
 fn transaction_to_table_cell(col: TransactionCol, transaction: Transaction) {
   case col {
+    TransactionColId -> transaction.id
     TransactionColCoin -> transaction.coin
     TransactionColDate -> transaction.date |> date_to_label
     TransactionColKind -> transaction.kind |> kind_to_label
@@ -232,6 +244,7 @@ fn transaction_to_table_cell(col: TransactionCol, transaction: Transaction) {
 }
 
 fn generic_report(transactions: List(Transaction)) {
+  use _ <- result.try(assert_no_duplicate_ids(transactions))
   use allocations <- result.try(calculate_sale_allocations(transactions))
 
   let headers = report_columns |> list.map(header_to_label)
@@ -272,6 +285,7 @@ fn table_config() {
 fn header_to_label(column: ReportColumn) {
   case column {
     ColBuyDate -> "Buy date"
+    ColBuyId -> "Buy Id"
     ColBuyPriceEach -> "Buy unit"
     ColBuyPriceTotal -> "Buy total"
     ColCapitalGain -> "Gain"
@@ -279,6 +293,7 @@ fn header_to_label(column: ReportColumn) {
     ColFY -> "FY"
     ColQty -> "Qty"
     ColSaleDate -> "Sale date"
+    ColSaleId -> "Sale Id"
     ColSalePriceEach -> "Sale unit"
     ColSalePriceTotal -> "Sale total"
   }
@@ -292,6 +307,7 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
   case column {
     ColFY -> allocation.sale_date |> date_to_financial_year
     ColBuyDate -> allocation.buy_date |> date_to_label
+    ColBuyId -> allocation.buy_transaction_id
     ColBuyPriceEach -> allocation.buy_price_each |> format_amount
     ColBuyPriceTotal ->
       allocation.buy_price_total
@@ -304,6 +320,7 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
       allocation.qty
       |> format_amount
     ColSaleDate -> allocation.sale_date |> date_to_label
+    ColSaleId -> allocation.sale_transaction_id
     ColSalePriceEach ->
       allocation.sale_price_each
       |> format_amount
@@ -629,6 +646,20 @@ fn read_input(file_path: String) -> Outcome(List(Transaction), String) {
   parse_input(content)
 }
 
+fn assert_no_duplicate_ids(transactions: List(Transaction)) {
+  let ids =
+    transactions
+    |> list.map(fn(t) { t.id })
+
+  let id_count = list.length(ids)
+  let id_count_check = set.from_list(ids) |> set.size
+
+  case id_count_check == id_count {
+    True -> Ok(transactions)
+    False -> Error("Duplicate ids found ") |> outcome
+  }
+}
+
 fn write_output(report: String, file_path: String) -> Outcome(Nil, String) {
   simplifile.write(to: file_path, contents: report)
   |> result.replace_error("Unable to write to " <> file_path)
@@ -636,8 +667,8 @@ fn write_output(report: String, file_path: String) -> Outcome(Nil, String) {
 }
 
 fn process_file(in_path: String, out_path: String) {
-  use input <- result.try(read_input(in_path))
-  use report <- result.try(report_csv(input))
+  use transactions <- result.try(read_input(in_path))
+  use report <- result.try(report_csv(transactions))
   use _ <- result.try(write_output(report, out_path))
   Ok("Done")
 }
@@ -667,8 +698,8 @@ pub fn main() -> Nil {
 
   use args <- given.ok(result, else_return: fn(e) { io.println_error(e) })
 
-  let in_path = "./.input/" <> args.file
-  let out_path = "./.output/" <> args.file
+  let in_path = "./.data/" <> args.file <> ".csv"
+  let out_path = "./.data/" <> args.file <> "_out.csv"
 
   case process_file(in_path, out_path) {
     Ok(message) -> io.println(message)

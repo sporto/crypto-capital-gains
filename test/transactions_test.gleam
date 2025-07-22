@@ -56,73 +56,81 @@ fn assert_report(transactions: List(Transaction), label: String) {
 
 pub fn one_sale_has_less_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(date: feb_2(), coin: "XRP", qty: 60.0, price_each: 0.6),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "b", date: feb_2(), coin: "XRP", qty: 60.0, price_each: 0.6),
   ]
   |> assert_report("Simple sale with less")
 }
 
 pub fn two_sales_have_less_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(date: feb_4(), coin: "XRP", qty: 30.0, price_each: 0.9),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 30.0, price_each: 0.9),
   ]
   |> assert_report("Two sales have less")
 }
 
 pub fn two_sales_have_exact_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(date: feb_4(), coin: "XRP", qty: 40.0, price_each: 0.9),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 40.0, price_each: 0.9),
   ]
   |> assert_report("Two sales have exact")
 }
 
 pub fn two_sales_have_too_much_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
-    make_sale(date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.9),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "b", date: feb_4(), coin: "XRP", qty: 60.0, price_each: 0.6),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.9),
   ]
   |> assert_report("Two sales have too much")
 }
 
 pub fn two_buys_one_sale_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.6),
-    make_sale(date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.6),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
   ]
   |> assert_report("Two buys one sale")
 }
 
 pub fn two_buys_two_sales_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_sale(date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
-    make_sale(date: feb_5(), coin: "XRP", qty: 50.0, price_each: 2.0),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 150.0, price_each: 1.0),
+    make_sale(id: "d", date: feb_5(), coin: "XRP", qty: 50.0, price_each: 2.0),
   ]
   |> assert_report("Two buys, two sales")
 }
 
 pub fn order_matters_test() {
   [
-    make_sale(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_sale(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_buy(id: "b", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 0.5),
   ]
   |> assert_report("Buy must be before")
 }
 
 pub fn mixed_test() {
   [
-    make_buy(date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
-    make_buy(date: feb_2(), coin: "SOL", qty: 100.0, price_each: 50.0),
-    make_sale(date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.75),
-    make_buy(date: feb_5(), coin: "XRP", qty: 100.0, price_each: 0.6),
-    make_sale(date: feb_6(), coin: "SOL", qty: 50.0, price_each: 40.0),
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_buy(id: "b", date: feb_2(), coin: "SOL", qty: 100.0, price_each: 50.0),
+    make_sale(id: "c", date: feb_4(), coin: "XRP", qty: 50.0, price_each: 0.75),
+    make_buy(id: "d", date: feb_5(), coin: "XRP", qty: 100.0, price_each: 0.6),
+    make_sale(id: "e", date: feb_6(), coin: "SOL", qty: 50.0, price_each: 40.0),
   ]
   |> assert_report("Mixed coins")
+}
+
+pub fn duplicate_ids_test() {
+  [
+    make_buy(id: "a", date: feb_1(), coin: "XRP", qty: 100.0, price_each: 0.5),
+    make_buy(id: "a", date: feb_2(), coin: "XRP", qty: 100.0, price_each: 50.0),
+  ]
+  |> assert_report("Duplicate ids")
 }

@@ -6,12 +6,12 @@ title: Two sales have too much
 
 ## Transactions
 
-Date      |Coin|Kind|Qty  |Each|Total
-----------|----|----|-----|----|-----
-2020-02-01|XRP |Buy |100.0|0.5 |50.0 
-2020-02-04|XRP |Sale|60.0 |0.6 |36.0 
-2020-02-04|XRP |Sale|50.0 |0.9 |45.0 
+Id|Date      |Coin|Kind|Qty  |Each|Total
+--|----------|----|----|-----|----|-----
+a |2020-02-01|XRP |Buy |100.0|0.5 |50.0 
+b |2020-02-04|XRP |Sale|60.0 |0.6 |36.0 
+c |2020-02-04|XRP |Sale|50.0 |0.9 |45.0 
 
 ## Allocations
 
-Error: No buy transactions left
+Error: No buy transactions left < qty_allocated_so_far 40.0 < remainding_qty_to_allocate 10.0 < sale_transaction c < sale_transaction c
