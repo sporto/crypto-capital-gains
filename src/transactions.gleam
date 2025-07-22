@@ -586,57 +586,51 @@ fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
   use id <- result.try(
     dict.get(row, "id")
     |> result.replace_error("Couldn't find id")
-    |> outcome
-    |> outcome.context("id"),
+    |> outcome,
   )
 
   use coin <- result.try(
     dict.get(row, "coin")
     |> result.replace_error("Couldn't find coin")
-    |> outcome
-    |> outcome.context("coin"),
+    |> outcome,
   )
 
   use date_str <- result.try(
     dict.get(row, "date")
     |> result.replace_error("Couldn't find date")
-    |> outcome
-    |> outcome.context("date"),
+    |> outcome,
   )
 
   use kind_str <- result.try(
     dict.get(row, "kind")
     |> result.replace_error("Couldn't find kind")
-    |> outcome
-    |> outcome.context("kind"),
+    |> outcome,
   )
 
   use qty_str <- result.try(
     dict.get(row, "qty")
     |> result.replace_error("Couldn't find qty")
-    |> outcome
-    |> outcome.context("qty"),
+    |> outcome,
   )
 
   use price_each_str <- result.try(
     dict.get(row, "price_each")
     |> result.replace_error("Couldn't find price_each")
-    |> outcome
-    |> outcome.context("price_each"),
+    |> outcome,
   )
 
   use buy_fee_str <- result.try(
     dict.get(row, "buy_fee")
     |> result.replace_error("Couldn't find buy_fee")
-    |> outcome
-    |> outcome.context("buy_fee"),
+    |> result.try_recover(fn(_) { Ok("0") })
+    |> outcome,
   )
 
   use sale_fee_str <- result.try(
     dict.get(row, "sale_fee")
     |> result.replace_error("Couldn't find sale_fee")
-    |> outcome
-    |> outcome.context("sale_fee"),
+    |> result.try_recover(fn(_) { Ok("0") })
+    |> outcome,
   )
 
   use date <- result.try(
