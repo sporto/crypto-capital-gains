@@ -127,6 +127,7 @@ type ReportColumn {
   ColSalePriceEach
   ColSalePriceTotal
   ColCapitalGain
+  ColCapitalGainDiscounted
   ColCGTDiscount
 }
 
@@ -143,6 +144,7 @@ const report_columns = [
   ColSalePriceEach,
   ColSalePriceTotal,
   ColCapitalGain,
+  ColCapitalGainDiscounted,
   ColCGTDiscount,
 ]
 
@@ -334,6 +336,7 @@ fn header_to_label(column: ReportColumn) {
     ColBuyPriceEach -> "Buy unit"
     ColBuyPriceTotal -> "Buy total"
     ColCapitalGain -> "Gain"
+    ColCapitalGainDiscounted -> "Gain d."
     ColCoin -> "Coin"
     ColFY -> "FY"
     ColQty -> "Qty"
@@ -350,6 +353,14 @@ fn sale_allocation_to_report_line(allocation: SaleAllocation) {
 }
 
 fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation) {
+  let gain = allocation.capital_gain
+  let has_discount = allocation.days_held > 365
+
+  let gain_after_discount = case has_discount {
+    True -> gain /. 2.0
+    False -> gain
+  }
+
   case column {
     ColFY -> allocation.sale_date |> date_to_financial_year
     ColBuyDate -> allocation.buy_date |> date_to_label
@@ -359,14 +370,17 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
       allocation.buy_price_total
       |> format_amount
     ColCapitalGain ->
-      allocation.capital_gain
+      gain
+      |> format_amount
+    ColCapitalGainDiscounted ->
+      gain_after_discount
       |> format_amount
     ColCoin -> allocation.coin
     ColQty ->
       allocation.qty
       |> format_amount
     ColCGTDiscount -> {
-      case { allocation.days_held > 365 } {
+      case has_discount {
         True -> "Yes"
         False -> ""
       }
