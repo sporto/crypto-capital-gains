@@ -239,15 +239,15 @@ const transaction_columns = [
   TransactionColBuyQty,
   TransactionColBuyPriceEach,
   TransactionColBuyPriceTotal,
+  TransactionColBuyFee,
   TransactionColBuyPriceEachAfterFee,
   TransactionColBuyTotalAfterFee,
-  TransactionColBuyFee,
   TransactionColSaleQty,
   TransactionColSalePriceEach,
   TransactionColSalePriceTotal,
+  TransactionColSaleFee,
   TransactionColSalePriceEachAfterFee,
   TransactionColSaleTotalAfterFee,
-  TransactionColSaleFee,
 ]
 
 pub fn transactions_table(transactions: List(Transaction)) {
@@ -262,22 +262,22 @@ pub fn transactions_table(transactions: List(Transaction)) {
 
 fn transaction_col_header_to_label(col: TransactionCol) {
   case col {
-    TransactionColId -> "Id"
-    TransactionColAsset -> "Coin"
+    TransactionColAsset -> "Asset"
+    TransactionColBuyFee -> "B fee"
+    TransactionColBuyPriceEach -> "B pr"
+    TransactionColBuyPriceEachAfterFee -> "B pr+fee"
+    TransactionColBuyPriceTotal -> "B tot"
+    TransactionColBuyQty -> "B qty"
+    TransactionColBuyTotalAfterFee -> "B tot+fee"
     TransactionColDate -> "Date"
-    TransactionColBuyFee -> "Buy fee"
-    TransactionColBuyPriceEach -> "Buy Each"
-    TransactionColSalePriceEach -> "Sale Each"
-    TransactionColBuyPriceEachAfterFee -> "Buy each after fee"
-    TransactionColSalePriceEachAfterFee -> "Sale each after fee"
-    TransactionColBuyPriceTotal -> "Buy Total"
-    TransactionColBuyQty -> "Buy Qty"
-    TransactionColBuyTotalAfterFee -> "Buy total after fee"
+    TransactionColId -> "Id"
     TransactionColKind -> "Kind"
-    TransactionColSaleFee -> "Sale fee"
-    TransactionColSalePriceTotal -> "Sale Total"
-    TransactionColSaleQty -> "Sale Qty"
-    TransactionColSaleTotalAfterFee -> "Sale total after fee"
+    TransactionColSaleFee -> "S fee"
+    TransactionColSalePriceEach -> "S pr"
+    TransactionColSalePriceEachAfterFee -> "S pr-fee"
+    TransactionColSalePriceTotal -> "S tot"
+    TransactionColSaleQty -> "S qty"
+    TransactionColSaleTotalAfterFee -> "S tot-fee"
   }
 }
 

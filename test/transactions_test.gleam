@@ -269,7 +269,7 @@ pub fn two_buys_two_sales_test() {
       asset: "XRP",
       qty: 100.0,
       price: 0.5,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_buy(
       id: "b",
@@ -277,7 +277,7 @@ pub fn two_buys_two_sales_test() {
       asset: "XRP",
       qty: 100.0,
       price: 0.5,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_sale(
       id: "c",
@@ -285,7 +285,7 @@ pub fn two_buys_two_sales_test() {
       asset: "XRP",
       qty: 150.0,
       price: 1.0,
-      fee: 0.0,
+      fee: 1.0,
     ),
     fixture_sale(
       id: "d",
@@ -293,7 +293,7 @@ pub fn two_buys_two_sales_test() {
       asset: "XRP",
       qty: 50.0,
       price: 2.0,
-      fee: 0.0,
+      fee: 1.0,
     ),
   ]
   |> assert_report("Two buys, two sales")
@@ -329,7 +329,7 @@ pub fn mixed_test() {
       asset: "XRP",
       qty: 100.0,
       price: 0.5,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_buy(
       id: "b",
@@ -337,7 +337,7 @@ pub fn mixed_test() {
       asset: "SOL",
       qty: 100.0,
       price: 50.0,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_sale(
       id: "c",
@@ -345,7 +345,7 @@ pub fn mixed_test() {
       asset: "XRP",
       qty: 50.0,
       price: 0.75,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_buy(
       id: "d",
@@ -353,7 +353,7 @@ pub fn mixed_test() {
       asset: "XRP",
       qty: 100.0,
       price: 0.6,
-      fee: 0.0,
+      fee: 0.5,
     ),
     fixture_sale(
       id: "e",
@@ -361,7 +361,7 @@ pub fn mixed_test() {
       asset: "SOL",
       qty: 50.0,
       price: 40.0,
-      fee: 0.0,
+      fee: 0.5,
     ),
   ]
   |> assert_report("Mixed assets")

@@ -8,7 +8,7 @@ test_name: transactions_table_has_correct_values_test
 
 ## Transactions
 
-Id|Date      |Coin|Kind|Qty  |Each|Total |Buy fee|Sale fee|Each after fee|Total after fee
---|----------|----|----|-----|----|------|-------|--------|--------------|---------------
-a |2020-02-01|SOL |Buy |100.0|10.0|1000.0|5.0    |        |10.05         |1005.0         
-b |2020-02-02|SOL |Sale|50.0 |10.0|500.0 |       |5.0     |9.9           |495.0          
+Id|Date      |Asset|Kind|B qty|B pr|B tot |B fee|B pr+fee|B tot+fee|S qty|S pr|S tot|S fee|S pr-fee|S tot-fee
+--|----------|-----|----|-----|----|------|-----|--------|---------|-----|----|-----|-----|--------|---------
+a |2020-02-01|SOL  |Buy |100.0|10.0|1000.0|5.0  |10.05   |1005.0   |     |    |     |     |        |         
+b |2020-02-02|SOL  |Sale|     |    |      |     |        |         |50.0 |10.0|500.0|5.0  |9.9     |495.0    

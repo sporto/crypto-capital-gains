@@ -6,10 +6,10 @@ title: Simple sale with less
 
 ## Transactions
 
-Id|Date      |Coin|Kind|Qty  |Each|Total|Buy fee|Sale fee|Each after fee|Total after fee
---|----------|----|----|-----|----|-----|-------|--------|--------------|---------------
-a |2020-02-01|XRP |Buy |100.0|0.5 |50.0 |0.0    |        |0.5           |50.0           
-b |2020-02-02|XRP |Sale|60.0 |0.6 |36.0 |       |0.0     |0.6           |36.0           
+Id|Date      |Asset|Kind|B qty|B pr|B tot|B fee|B pr+fee|B tot+fee|S qty|S pr|S tot|S fee|S pr-fee|S tot-fee
+--|----------|-----|----|-----|----|-----|-----|--------|---------|-----|----|-----|-----|--------|---------
+a |2020-02-01|XRP  |Buy |100.0|0.5 |50.0 |0.0  |0.5     |50.0     |     |    |     |     |        |         
+b |2020-02-02|XRP  |Sale|     |    |     |     |        |         |60.0 |0.6 |36.0 |0.0  |0.6     |36.0     
 
 ## Allocations
 
