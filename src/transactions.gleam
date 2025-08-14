@@ -3,7 +3,6 @@ import clip.{type Command}
 import clip/help
 import clip/opt.{type Opt}
 import given
-import gleam/bool
 import gleam/dict
 import gleam/float
 import gleam/function
@@ -41,58 +40,63 @@ fn kind_from_code(code: String) {
 }
 
 pub type Transaction {
-  Transaction(
-    buy_fee: Float,
-    asset: String,
-    date: Date,
-    id: String,
-    kind: Kind,
-    price_each: Float,
-    qty: Float,
-    sale_fee: Float,
-  )
+  TransactionBuy(BuyTransaction)
+  TransactionSale(SaleTransaction)
 }
 
-pub type TransactionComputed {
-  TransactionComputed(
-    buy_fee: Float,
-    asset: String,
-    date: Date,
-    id: String,
-    kind: Kind,
-    price_each: Float,
-    price_total: Float,
-    qty: Float,
-    sale_fee: Float,
-    price_total_after_fee: Float,
-    price_each_after_fee: Float,
-  )
-}
-
-fn transaction_input_to_computed(
-  transaction: Transaction,
-) -> TransactionComputed {
-  let price_total = transaction.price_each *. transaction.qty
-
-  let price_total_after_fee = case transaction.kind {
-    Buy -> price_total +. transaction.buy_fee
-    Sale -> price_total -. transaction.sale_fee
+fn transaction_id(transaction: Transaction) {
+  case transaction {
+    TransactionBuy(t) -> t.id
+    TransactionSale(t) -> t.id
   }
+}
 
-  let price_each_after_fee = price_total_after_fee /. transaction.qty
+fn transaction_asset(transaction: Transaction) {
+  case transaction {
+    TransactionBuy(t) -> t.asset
+    TransactionSale(t) -> t.asset
+  }
+}
 
-  TransactionComputed(
-    buy_fee: transaction.buy_fee,
-    asset: transaction.asset,
-    date: transaction.date,
-    id: transaction.id,
-    kind: transaction.kind,
-    price_each: transaction.price_each,
-    price_total:,
-    qty: transaction.qty,
-    sale_fee: transaction.sale_fee,
-    price_total_after_fee:,
-    price_each_after_fee:,
+fn transaction_date(transaction: Transaction) {
+  case transaction {
+    TransactionBuy(t) -> t.date
+    TransactionSale(t) -> t.date
+  }
+}
+
+fn transaction_kind(transaction: Transaction) {
+  case transaction {
+    TransactionBuy(_) -> Buy
+    TransactionSale(_) -> Sale
+  }
+}
+
+pub type BuyTransaction {
+  BuyTransaction(
+    asset: String,
+    date: Date,
+    id: String,
+    buy_fee: Float,
+    buy_price: Float,
+    buy_price_each_after_fee: Float,
+    buy_price_total: Float,
+    buy_price_total_after_fee: Float,
+    buy_qty: Float,
+  )
+}
+
+pub type SaleTransaction {
+  SaleTransaction(
+    asset: String,
+    date: Date,
+    id: String,
+    sale_fee: Float,
+    sale_price: Float,
+    sale_price_each_after_fee: Float,
+    sale_price_total: Float,
+    sale_price_total_after_fee: Float,
+    sale_qty: Float,
   )
 }
 
@@ -158,17 +162,30 @@ pub type Acc {
 }
 
 fn calculate_sale_allocations(
-  transactions: List(TransactionComputed),
+  transactions: List(Transaction),
 ) -> Outcome(List(SaleAllocation), String) {
-  let #(buy_transactions, sale_transactions) =
-    transactions |> list.partition(fn(t) { t.kind == Buy })
+  let buy_transactions =
+    list.filter_map(transactions, fn(t) {
+      case t {
+        TransactionBuy(t) -> Ok(t)
+        _ -> Error(Nil)
+      }
+    })
+
+  let sale_transactions =
+    list.filter_map(transactions, fn(t) {
+      case t {
+        TransactionSale(t) -> Ok(t)
+        _ -> Error(Nil)
+      }
+    })
 
   let initial = Acc(allocations: [])
 
   list.try_fold(
     sale_transactions,
     initial,
-    fn(acc: Acc, transaction: TransactionComputed) {
+    fn(acc: Acc, transaction: SaleTransaction) {
       let relevant_buy_transactions =
         buy_transactions
         |> list.filter(fn(t) { t.asset == transaction.asset })
@@ -200,13 +217,18 @@ type TransactionCol {
   TransactionColAsset
   TransactionColDate
   TransactionColKind
-  TransactionColPriceEach
-  TransactionColPriceTotal
-  TransactionColQty
-  TransactionBuyFee
-  TransactionSaleFee
-  TransactionPriceEachAfterFee
-  TransactionTotalAfterFee
+  TransactionColBuyPriceEach
+  TransactionColBuyPriceTotal
+  TransactionColBuyQty
+  TransactionColBuyFee
+  TransactionColBuyPriceEachAfterFee
+  TransactionColBuyTotalAfterFee
+  TransactionColSalePriceEach
+  TransactionColSalePriceTotal
+  TransactionColSaleQty
+  TransactionColSaleFee
+  TransactionColSalePriceEachAfterFee
+  TransactionColSaleTotalAfterFee
 }
 
 const transaction_columns = [
@@ -214,18 +236,21 @@ const transaction_columns = [
   TransactionColDate,
   TransactionColAsset,
   TransactionColKind,
-  TransactionColQty,
-  TransactionColPriceEach,
-  TransactionColPriceTotal,
-  TransactionBuyFee,
-  TransactionSaleFee,
-  TransactionPriceEachAfterFee,
-  TransactionTotalAfterFee,
+  TransactionColBuyQty,
+  TransactionColBuyPriceEach,
+  TransactionColBuyPriceTotal,
+  TransactionColBuyPriceEachAfterFee,
+  TransactionColBuyTotalAfterFee,
+  TransactionColBuyFee,
+  TransactionColSaleQty,
+  TransactionColSalePriceEach,
+  TransactionColSalePriceTotal,
+  TransactionColSalePriceEachAfterFee,
+  TransactionColSaleTotalAfterFee,
+  TransactionColSaleFee,
 ]
 
 pub fn transactions_table(transactions: List(Transaction)) {
-  let transactions = list.map(transactions, transaction_input_to_computed)
-
   let headers = transaction_columns |> list.map(transaction_col_header_to_label)
 
   let rows =
@@ -240,57 +265,110 @@ fn transaction_col_header_to_label(col: TransactionCol) {
     TransactionColId -> "Id"
     TransactionColAsset -> "Coin"
     TransactionColDate -> "Date"
+    TransactionColBuyFee -> "Buy fee"
+    TransactionColBuyPriceEach -> "Buy Each"
+    TransactionColSalePriceEach -> "Sale Each"
+    TransactionColBuyPriceEachAfterFee -> "Buy each after fee"
+    TransactionColSalePriceEachAfterFee -> "Sale each after fee"
+    TransactionColBuyPriceTotal -> "Buy Total"
+    TransactionColBuyQty -> "Buy Qty"
+    TransactionColBuyTotalAfterFee -> "Buy total after fee"
     TransactionColKind -> "Kind"
-    TransactionColPriceEach -> "Each"
-    TransactionColPriceTotal -> "Total"
-    TransactionColQty -> "Qty"
-    TransactionBuyFee -> "Buy fee"
-    TransactionSaleFee -> "Sale fee"
-    TransactionPriceEachAfterFee -> "Each after fee"
-    TransactionTotalAfterFee -> "Total after fee"
+    TransactionColSaleFee -> "Sale fee"
+    TransactionColSalePriceTotal -> "Sale Total"
+    TransactionColSaleQty -> "Sale Qty"
+    TransactionColSaleTotalAfterFee -> "Sale total after fee"
   }
 }
 
-fn transaction_to_table_row(transaction: TransactionComputed) {
+fn transaction_to_table_row(transaction: Transaction) {
   transaction_columns
   |> list.map(transaction_to_table_cell(_, transaction))
 }
 
-fn transaction_to_table_cell(
-  col: TransactionCol,
-  transaction: TransactionComputed,
-) {
+fn transaction_to_table_cell(col: TransactionCol, transaction: Transaction) {
   case col {
-    TransactionColId -> transaction.id
-    TransactionColAsset -> transaction.asset
-    TransactionColDate -> transaction.date |> date_to_label
-    TransactionColKind -> transaction.kind |> kind_to_label
-    TransactionColPriceEach -> transaction.price_each |> format_amount
-    TransactionColPriceTotal -> transaction.price_total |> format_amount
-    TransactionColQty -> transaction.qty |> format_amount
-    TransactionBuyFee -> {
-      case transaction.kind {
-        Buy -> transaction.buy_fee |> format_amount
-        Sale -> ""
+    TransactionColId -> transaction_id(transaction)
+    TransactionColAsset -> transaction_asset(transaction)
+    TransactionColDate -> transaction |> transaction_date |> date_to_label
+    TransactionColKind -> transaction |> transaction_kind |> kind_to_label
+    TransactionColBuyPriceEach -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_price |> format_amount
+        _ -> ""
       }
     }
-    TransactionSaleFee -> {
-      case transaction.kind {
-        Buy -> ""
-        Sale -> transaction.sale_fee |> format_amount
+    TransactionColBuyPriceTotal -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_price_total |> format_amount
+        _ -> ""
       }
     }
-    TransactionPriceEachAfterFee ->
-      transaction.price_each_after_fee |> format_amount
-    TransactionTotalAfterFee ->
-      transaction.price_total_after_fee |> format_amount
+    TransactionColBuyQty -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_qty |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColBuyFee -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_fee |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColBuyPriceEachAfterFee -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_price_each_after_fee |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColBuyTotalAfterFee -> {
+      case transaction {
+        TransactionBuy(t) -> t.buy_price_total_after_fee |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSalePriceEach -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_price |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSalePriceTotal -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_price_total |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSaleQty -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_qty |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSaleFee -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_fee |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSalePriceEachAfterFee -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_price_each_after_fee |> format_amount
+        _ -> ""
+      }
+    }
+    TransactionColSaleTotalAfterFee -> {
+      case transaction {
+        TransactionSale(t) -> t.sale_price_total_after_fee |> format_amount
+        _ -> ""
+      }
+    }
   }
 }
 
 fn generic_report(transactions: List(Transaction)) {
   use _ <- result.try(assert_no_duplicate_ids(transactions))
-
-  let transactions = list.map(transactions, transaction_input_to_computed)
 
   use allocations <- result.try(calculate_sale_allocations(transactions))
 
@@ -415,8 +493,8 @@ fn date_to_financial_year(date: Date) {
 }
 
 fn allocate_sale_transaction(
-  sale_transaction: TransactionComputed,
-  relevant_buy_transactions: List(TransactionComputed),
+  sale_transaction: SaleTransaction,
+  relevant_buy_transactions: List(BuyTransaction),
   allocations_for_this_asset: List(SaleAllocation),
 ) -> Outcome(List(SaleAllocation), String) {
   use <- with_context("sale_transaction " <> sale_transaction.id)
@@ -432,7 +510,8 @@ fn allocate_sale_transaction(
     |> list.map(fn(alloc) { alloc.qty })
     |> float.sum
 
-  let remainding_qty_to_allocate = sale_transaction.qty -. qty_allocated_so_far
+  let remainding_qty_to_allocate =
+    sale_transaction.sale_qty -. qty_allocated_so_far
 
   // echo "remainding_qty_to_allocate"
   // echo remainding_qty_to_allocate
@@ -472,7 +551,7 @@ fn allocate_sale_transaction(
       // echo qty_allocated_so_far_for_buy_transaction
 
       let remainder_to_allocate_for_buy =
-        buy_transaction.qty -. qty_allocated_so_far_for_buy_transaction
+        buy_transaction.buy_qty -. qty_allocated_so_far_for_buy_transaction
 
       // echo "remainder_to_allocate_for_buy"
       // echo remainder_to_allocate_for_buy
@@ -491,10 +570,10 @@ fn allocate_sale_transaction(
       // echo "allocation_qty"
       // echo allocation_qty
 
-      let buy_price_each = buy_transaction.price_each_after_fee
+      let buy_price_each = buy_transaction.buy_price_each_after_fee
       let buy_price_total = allocation_qty *. buy_price_each
 
-      let sale_price_each = sale_transaction.price_each_after_fee
+      let sale_price_each = sale_transaction.sale_price_each_after_fee
       let sale_price_total = allocation_qty *. sale_price_each
 
       let capital_gain = sale_price_total -. buy_price_total
@@ -563,6 +642,62 @@ pub fn format_amount(amount: Float) -> String {
   left <> "." <> decimals
 }
 
+pub fn make_buy_transaction(
+  asset asset: String,
+  date date: Date,
+  id id: String,
+  buy_fee buy_fee: Float,
+  buy_price buy_price: Float,
+  buy_qty buy_qty: Float,
+) {
+  let buy_price_total = buy_qty *. buy_price
+
+  let buy_price_total_after_fee = buy_price_total +. buy_fee
+
+  let buy_price_each_after_fee = buy_price_total_after_fee /. buy_qty
+
+  BuyTransaction(
+    asset:,
+    date:,
+    id:,
+    buy_fee:,
+    buy_price:,
+    buy_price_total:,
+    buy_qty:,
+    buy_price_total_after_fee:,
+    buy_price_each_after_fee:,
+  )
+  |> TransactionBuy
+}
+
+pub fn make_sale_transaction(
+  asset asset: String,
+  date date: Date,
+  id id: String,
+  sale_fee sale_fee: Float,
+  sale_price sale_price: Float,
+  sale_qty sale_qty: Float,
+) {
+  let sale_price_total = sale_qty *. sale_price
+
+  let sale_price_total_after_fee = sale_price_total -. sale_fee
+
+  let sale_price_each_after_fee = sale_price_total_after_fee /. sale_qty
+
+  SaleTransaction(
+    asset:,
+    date:,
+    id:,
+    sale_fee:,
+    sale_price:,
+    sale_price_total:,
+    sale_qty:,
+    sale_price_total_after_fee:,
+    sale_price_each_after_fee:,
+  )
+  |> TransactionSale
+}
+
 import tempo/date
 import tempo/error.{type DateParseError}
 
@@ -575,6 +710,8 @@ fn date_parse_error_to_label(error: DateParseError) {
 
 fn parse_date(input: String) -> outcome.Outcome(Date, String) {
   date.parse(input, tempo.CustomDate("DD/MM/YYYY"))
+  |> result.or(date.parse(input, tempo.CustomDate("D/MM/YYYY")))
+  |> result.or(date.parse(input, tempo.CustomDate("D/M/YYYY")))
   |> result.map_error(date_parse_error_to_label)
   |> outcome
   |> outcome.context("When parsing " <> input)
@@ -592,106 +729,79 @@ fn parse_input(content: String) {
   |> list.try_map(parse_input_line)
 }
 
-fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
+fn get_str(row, attr) {
+  dict.get(row, attr)
+  |> result.replace_error("Couldn't find " <> attr)
+  |> outcome
+}
+
+fn get_date(row, attr) {
+  use date_str <- result.try(
+    dict.get(row, attr)
+    |> result.replace_error("Couldn't find " <> attr)
+    |> outcome,
+  )
+
+  parse_date(date_str)
+}
+
+fn get_float(row, attr) {
+  use str <- result.try(
+    dict.get(row, attr)
+    |> result.replace_error("Couldn't find " <> attr)
+    |> outcome,
+  )
+  str |> parse_float
+}
+
+fn parse_input_line(
+  tuple: #(Int, dict.Dict(String, String)),
+) -> Outcome(Transaction, String) {
   let #(line_index, row) = tuple
 
   use <- with_context("line " <> int.to_string(line_index))
 
-  use id <- result.try(
-    dict.get(row, "id")
-    |> result.replace_error("Couldn't find id")
-    |> outcome,
-  )
+  use id <- result.try(get_str(row, "id"))
 
-  use asset <- result.try(
-    dict.get(row, "asset")
-    |> result.replace_error("Couldn't find asset")
-    |> outcome,
-  )
+  use asset <- result.try(get_str(row, "asset"))
 
-  use date_str <- result.try(
-    dict.get(row, "date")
-    |> result.replace_error("Couldn't find date")
-    |> outcome,
-  )
+  use kind_str <- result.try(get_str(row, "kind"))
 
-  use kind_str <- result.try(
-    dict.get(row, "kind")
-    |> result.replace_error("Couldn't find kind")
-    |> outcome,
-  )
-
-  use qty_str <- result.try(
-    dict.get(row, "qty")
-    |> result.replace_error("Couldn't find qty")
-    |> outcome,
-  )
-
-  use price_each_str <- result.try(
-    dict.get(row, "price_each")
-    |> result.replace_error("Couldn't find price_each")
-    |> outcome,
-  )
-
-  use buy_fee_str <- result.try(
-    dict.get(row, "buy_fee")
-    |> result.replace_error("Couldn't find buy_fee")
-    |> result.try_recover(fn(_) { Ok("0") })
-    |> outcome,
-  )
-
-  use sale_fee_str <- result.try(
-    dict.get(row, "sale_fee")
-    |> result.replace_error("Couldn't find sale_fee")
-    |> result.try_recover(fn(_) { Ok("0") })
-    |> outcome,
-  )
-
-  use date <- result.try(
-    parse_date(date_str)
-    |> outcome.context("date"),
-  )
+  use date <- result.try(get_date(row, "date"))
 
   use kind <- result.try(
     kind_from_code(kind_str) |> outcome |> outcome.context("kind"),
   )
 
-  use price_each <- result.try(
-    price_each_str
-    |> string.replace("$", "")
-    |> parse_float
-    |> outcome.context("price_each"),
-  )
+  case kind {
+    Buy -> {
+      use buy_qty <- result.try(get_float(row, "buy_qty"))
 
-  use buy_fee <- result.try(
-    buy_fee_str
-    |> string.replace("$", "")
-    |> parse_float
-    |> outcome.context("buy_fee"),
-  )
+      use buy_price <- result.try(get_float(row, "buy_price"))
 
-  use sale_fee <- result.try(
-    sale_fee_str
-    |> string.replace("$", "")
-    |> parse_float
-    |> outcome.context("sale_fee"),
-  )
+      use buy_fee <- result.try(get_float(row, "buy_fee"))
 
-  use qty <- result.try(qty_str |> parse_float |> outcome.context("qty"))
+      make_buy_transaction(asset:, date:, id:, buy_fee:, buy_price:, buy_qty:)
+      |> Ok
+    }
+    Sale -> {
+      use sale_qty <- result.try(get_float(row, "sale_qty"))
 
-  let transaction =
-    Transaction(
-      buy_fee:,
-      asset:,
-      date:,
-      id:,
-      kind:,
-      price_each:,
-      qty:,
-      sale_fee:,
-    )
+      use sale_price <- result.try(get_float(row, "sale_price"))
 
-  Ok(transaction)
+      use sale_fee <- result.try(get_float(row, "sale_fee"))
+
+      make_sale_transaction(
+        asset:,
+        date:,
+        id:,
+        sale_fee:,
+        sale_price:,
+        sale_qty:,
+      )
+      |> Ok
+    }
+  }
 }
 
 fn parse_int(input: String) {
@@ -736,7 +846,12 @@ fn read_input(file_path: String) -> Outcome(List(Transaction), String) {
 fn assert_no_duplicate_ids(transactions: List(Transaction)) {
   let ids =
     transactions
-    |> list.map(fn(t) { t.id })
+    |> list.map(fn(t) {
+      case t {
+        TransactionBuy(buy) -> buy.id
+        TransactionSale(sale) -> sale.id
+      }
+    })
 
   let id_count = list.length(ids)
   let id_count_check = set.from_list(ids) |> set.size

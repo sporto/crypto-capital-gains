@@ -4,23 +4,10 @@ import gleeunit
 import outcome
 import tempo
 import tempo/date
-import transactions.{type Transaction, Transaction}
+import transactions.{type Transaction}
 
 pub fn main() -> Nil {
   gleeunit.main()
-}
-
-pub fn fixture_transaction(
-  buy_fee buy_fee: Float,
-  asset asset: String,
-  date date: tempo.Date,
-  id id: String,
-  kind kind: transactions.Kind,
-  price_each price_each: Float,
-  qty qty: Float,
-  sale_fee sale_fee: Float,
-) {
-  Transaction(id:, date:, asset:, kind:, qty:, price_each:, buy_fee:, sale_fee:)
 }
 
 pub fn fixture_buy(
@@ -28,38 +15,34 @@ pub fn fixture_buy(
   date date: tempo.Date,
   fee fee: Float,
   id id: String,
-  price_each price_each: Float,
-  qty qty: Float,
+  price buy_price: Float,
+  qty buy_qty: Float,
 ) {
-  fixture_transaction(
-    buy_fee: fee,
+  transactions.make_buy_transaction(
     asset:,
+    buy_fee: fee,
+    buy_price:,
+    buy_qty:,
     date:,
     id:,
-    kind: transactions.Buy,
-    price_each:,
-    qty:,
-    sale_fee: 0.0,
   )
 }
 
 pub fn fixture_sale(
   asset asset: String,
   date date: tempo.Date,
-  fee fee: Float,
+  fee sale_fee: Float,
   id id: String,
-  price_each price_each: Float,
-  qty qty: Float,
+  price sale_price: Float,
+  qty sale_qty: Float,
 ) {
-  fixture_transaction(
-    buy_fee: 0.0,
+  transactions.make_sale_transaction(
     asset:,
     date:,
     id:,
-    kind: transactions.Sale,
-    price_each:,
-    qty:,
-    sale_fee: fee,
+    sale_price:,
+    sale_qty:,
+    sale_fee:,
   )
 }
 
@@ -115,7 +98,7 @@ pub fn transactions_table_has_correct_values_test() {
       date: feb_1(),
       asset: "SOL",
       qty: 100.0,
-      price_each: 10.0,
+      price: 10.0,
       fee: 5.0,
     ),
     fixture_sale(
@@ -123,7 +106,7 @@ pub fn transactions_table_has_correct_values_test() {
       date: feb_2(),
       asset: "SOL",
       qty: 50.0,
-      price_each: 10.0,
+      price: 10.0,
       fee: 5.0,
     ),
   ]
@@ -143,7 +126,7 @@ pub fn one_sale_has_less_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_sale(
@@ -151,7 +134,7 @@ pub fn one_sale_has_less_test() {
       date: feb_2(),
       asset: "XRP",
       qty: 60.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
   ]
@@ -165,7 +148,7 @@ pub fn two_sales_have_less_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_sale(
@@ -173,7 +156,7 @@ pub fn two_sales_have_less_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 60.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
     fixture_sale(
@@ -181,7 +164,7 @@ pub fn two_sales_have_less_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 30.0,
-      price_each: 0.9,
+      price: 0.9,
       fee: 0.0,
     ),
   ]
@@ -195,7 +178,7 @@ pub fn two_sales_have_exact_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_sale(
@@ -203,7 +186,7 @@ pub fn two_sales_have_exact_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 60.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
     fixture_sale(
@@ -211,7 +194,7 @@ pub fn two_sales_have_exact_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 40.0,
-      price_each: 0.9,
+      price: 0.9,
       fee: 0.0,
     ),
   ]
@@ -225,7 +208,7 @@ pub fn two_sales_have_too_much_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_sale(
@@ -233,7 +216,7 @@ pub fn two_sales_have_too_much_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 60.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
     fixture_sale(
@@ -241,7 +224,7 @@ pub fn two_sales_have_too_much_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 50.0,
-      price_each: 0.9,
+      price: 0.9,
       fee: 0.0,
     ),
   ]
@@ -255,7 +238,7 @@ pub fn two_buys_one_sale_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_buy(
@@ -263,7 +246,7 @@ pub fn two_buys_one_sale_test() {
       date: feb_2(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
     fixture_sale(
@@ -271,7 +254,7 @@ pub fn two_buys_one_sale_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 150.0,
-      price_each: 1.0,
+      price: 1.0,
       fee: 0.0,
     ),
   ]
@@ -285,7 +268,7 @@ pub fn two_buys_two_sales_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_buy(
@@ -293,7 +276,7 @@ pub fn two_buys_two_sales_test() {
       date: feb_2(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_sale(
@@ -301,7 +284,7 @@ pub fn two_buys_two_sales_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 150.0,
-      price_each: 1.0,
+      price: 1.0,
       fee: 0.0,
     ),
     fixture_sale(
@@ -309,7 +292,7 @@ pub fn two_buys_two_sales_test() {
       date: feb_5(),
       asset: "XRP",
       qty: 50.0,
-      price_each: 2.0,
+      price: 2.0,
       fee: 0.0,
     ),
   ]
@@ -323,7 +306,7 @@ pub fn order_matters_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_buy(
@@ -331,7 +314,7 @@ pub fn order_matters_test() {
       date: feb_2(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
   ]
@@ -345,7 +328,7 @@ pub fn mixed_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_buy(
@@ -353,7 +336,7 @@ pub fn mixed_test() {
       date: feb_2(),
       asset: "SOL",
       qty: 100.0,
-      price_each: 50.0,
+      price: 50.0,
       fee: 0.0,
     ),
     fixture_sale(
@@ -361,7 +344,7 @@ pub fn mixed_test() {
       date: feb_4(),
       asset: "XRP",
       qty: 50.0,
-      price_each: 0.75,
+      price: 0.75,
       fee: 0.0,
     ),
     fixture_buy(
@@ -369,7 +352,7 @@ pub fn mixed_test() {
       date: feb_5(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.6,
+      price: 0.6,
       fee: 0.0,
     ),
     fixture_sale(
@@ -377,7 +360,7 @@ pub fn mixed_test() {
       date: feb_6(),
       asset: "SOL",
       qty: 50.0,
-      price_each: 40.0,
+      price: 40.0,
       fee: 0.0,
     ),
   ]
@@ -391,7 +374,7 @@ pub fn duplicate_ids_test() {
       date: feb_1(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 0.5,
+      price: 0.5,
       fee: 0.0,
     ),
     fixture_buy(
@@ -399,7 +382,7 @@ pub fn duplicate_ids_test() {
       date: feb_2(),
       asset: "XRP",
       qty: 100.0,
-      price_each: 50.0,
+      price: 50.0,
       fee: 0.0,
     ),
   ]
