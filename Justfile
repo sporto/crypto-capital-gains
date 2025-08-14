@@ -8,4 +8,4 @@ help:
 	gleam run -- --help
 
 run:
-	gleam run -- --file lorenzo
+	gleam run -- --file seb2

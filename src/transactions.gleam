@@ -43,7 +43,7 @@ fn kind_from_code(code: String) {
 pub type Transaction {
   Transaction(
     buy_fee: Float,
-    coin: String,
+    asset: String,
     date: Date,
     id: String,
     kind: Kind,
@@ -56,7 +56,7 @@ pub type Transaction {
 pub type TransactionComputed {
   TransactionComputed(
     buy_fee: Float,
-    coin: String,
+    asset: String,
     date: Date,
     id: String,
     kind: Kind,
@@ -83,7 +83,7 @@ fn transaction_input_to_computed(
 
   TransactionComputed(
     buy_fee: transaction.buy_fee,
-    coin: transaction.coin,
+    asset: transaction.asset,
     date: transaction.date,
     id: transaction.id,
     kind: transaction.kind,
@@ -103,7 +103,7 @@ pub type SaleAllocation {
     buy_price_total: Float,
     buy_transaction_id: String,
     capital_gain: Float,
-    coin: String,
+    asset: String,
     days_held: Int,
     id: Uuid,
     qty: Float,
@@ -116,7 +116,7 @@ pub type SaleAllocation {
 
 type ReportColumn {
   ColFY
-  ColCoin
+  ColAsset
   ColBuyDate
   ColSaleDate
   ColBuyId
@@ -134,7 +134,7 @@ type ReportColumn {
 const report_columns = [
   ColFY,
   ColSaleDate,
-  ColCoin,
+  ColAsset,
   ColBuyDate,
   ColBuyId,
   ColSaleId,
@@ -171,16 +171,16 @@ fn calculate_sale_allocations(
     fn(acc: Acc, transaction: TransactionComputed) {
       let relevant_buy_transactions =
         buy_transactions
-        |> list.filter(fn(t) { t.coin == transaction.coin })
+        |> list.filter(fn(t) { t.asset == transaction.asset })
 
-      let allocations_for_this_coin =
+      let allocations_for_this_asset =
         acc.allocations
-        |> list.filter(fn(a) { a.coin == transaction.coin })
+        |> list.filter(fn(a) { a.asset == transaction.asset })
 
       use new_allocations <- result.try(allocate_sale_transaction(
         transaction,
         relevant_buy_transactions,
-        allocations_for_this_coin,
+        allocations_for_this_asset,
       ))
 
       let next_allocations = list.append(acc.allocations, new_allocations)
@@ -197,7 +197,7 @@ type GenericReport {
 
 type TransactionCol {
   TransactionColId
-  TransactionColCoin
+  TransactionColAsset
   TransactionColDate
   TransactionColKind
   TransactionColPriceEach
@@ -212,7 +212,7 @@ type TransactionCol {
 const transaction_columns = [
   TransactionColId,
   TransactionColDate,
-  TransactionColCoin,
+  TransactionColAsset,
   TransactionColKind,
   TransactionColQty,
   TransactionColPriceEach,
@@ -238,7 +238,7 @@ pub fn transactions_table(transactions: List(Transaction)) {
 fn transaction_col_header_to_label(col: TransactionCol) {
   case col {
     TransactionColId -> "Id"
-    TransactionColCoin -> "Coin"
+    TransactionColAsset -> "Coin"
     TransactionColDate -> "Date"
     TransactionColKind -> "Kind"
     TransactionColPriceEach -> "Each"
@@ -262,7 +262,7 @@ fn transaction_to_table_cell(
 ) {
   case col {
     TransactionColId -> transaction.id
-    TransactionColCoin -> transaction.coin
+    TransactionColAsset -> transaction.asset
     TransactionColDate -> transaction.date |> date_to_label
     TransactionColKind -> transaction.kind |> kind_to_label
     TransactionColPriceEach -> transaction.price_each |> format_amount
@@ -337,7 +337,7 @@ fn header_to_label(column: ReportColumn) {
     ColBuyPriceTotal -> "Buy total"
     ColCapitalGain -> "Gain"
     ColCapitalGainDiscounted -> "Gain d."
-    ColCoin -> "Coin"
+    ColAsset -> "Coin"
     ColFY -> "FY"
     ColQty -> "Qty"
     ColCGTDiscount -> "CGT Discount"
@@ -375,7 +375,7 @@ fn sale_allocation_report_cell(column: ReportColumn, allocation: SaleAllocation)
     ColCapitalGainDiscounted ->
       gain_after_discount
       |> format_amount
-    ColCoin -> allocation.coin
+    ColAsset -> allocation.asset
     ColQty ->
       allocation.qty
       |> format_amount
@@ -417,12 +417,12 @@ fn date_to_financial_year(date: Date) {
 fn allocate_sale_transaction(
   sale_transaction: TransactionComputed,
   relevant_buy_transactions: List(TransactionComputed),
-  allocations_for_this_coin: List(SaleAllocation),
+  allocations_for_this_asset: List(SaleAllocation),
 ) -> Outcome(List(SaleAllocation), String) {
   use <- with_context("sale_transaction " <> sale_transaction.id)
 
   let allocations_for_this_sale_transaction =
-    allocations_for_this_coin
+    allocations_for_this_asset
     |> list.filter(fn(alloc) {
       alloc.sale_transaction_id == sale_transaction.id
     })
@@ -453,12 +453,12 @@ fn allocate_sale_transaction(
         allocate_sale_transaction(
           sale_transaction,
           rest_buy_transactions,
-          allocations_for_this_coin,
+          allocations_for_this_asset,
         )
       })
 
       let allocations_for_this_buy_transaction =
-        allocations_for_this_coin
+        allocations_for_this_asset
         |> list.filter(fn(alloc) {
           alloc.buy_transaction_id == buy_transaction.id
         })
@@ -481,7 +481,7 @@ fn allocate_sale_transaction(
         allocate_sale_transaction(
           sale_transaction,
           rest_buy_transactions,
-          allocations_for_this_coin,
+          allocations_for_this_asset,
         )
       })
 
@@ -509,7 +509,7 @@ fn allocate_sale_transaction(
           buy_price_total:,
           buy_transaction_id: buy_transaction.id,
           capital_gain:,
-          coin: sale_transaction.coin,
+          asset: sale_transaction.asset,
           id: uuid.v4(),
           qty: allocation_qty,
           days_held:,
@@ -523,7 +523,7 @@ fn allocate_sale_transaction(
       // echo new_allocation
 
       let next_allocations =
-        list.append(allocations_for_this_coin, [new_allocation])
+        list.append(allocations_for_this_asset, [new_allocation])
 
       allocate_sale_transaction(
         sale_transaction,
@@ -603,9 +603,9 @@ fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
     |> outcome,
   )
 
-  use coin <- result.try(
-    dict.get(row, "coin")
-    |> result.replace_error("Couldn't find coin")
+  use asset <- result.try(
+    dict.get(row, "asset")
+    |> result.replace_error("Couldn't find asset")
     |> outcome,
   )
 
@@ -682,7 +682,7 @@ fn parse_input_line(tuple: #(Int, dict.Dict(String, String))) {
   let transaction =
     Transaction(
       buy_fee:,
-      coin:,
+      asset:,
       date:,
       id:,
       kind:,

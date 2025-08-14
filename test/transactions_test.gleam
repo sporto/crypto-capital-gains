@@ -12,7 +12,7 @@ pub fn main() -> Nil {
 
 pub fn fixture_transaction(
   buy_fee buy_fee: Float,
-  coin coin: String,
+  asset asset: String,
   date date: tempo.Date,
   id id: String,
   kind kind: transactions.Kind,
@@ -20,11 +20,11 @@ pub fn fixture_transaction(
   qty qty: Float,
   sale_fee sale_fee: Float,
 ) {
-  Transaction(id:, date:, coin:, kind:, qty:, price_each:, buy_fee:, sale_fee:)
+  Transaction(id:, date:, asset:, kind:, qty:, price_each:, buy_fee:, sale_fee:)
 }
 
 pub fn fixture_buy(
-  coin coin: String,
+  asset asset: String,
   date date: tempo.Date,
   fee fee: Float,
   id id: String,
@@ -33,7 +33,7 @@ pub fn fixture_buy(
 ) {
   fixture_transaction(
     buy_fee: fee,
-    coin:,
+    asset:,
     date:,
     id:,
     kind: transactions.Buy,
@@ -44,7 +44,7 @@ pub fn fixture_buy(
 }
 
 pub fn fixture_sale(
-  coin coin: String,
+  asset asset: String,
   date date: tempo.Date,
   fee fee: Float,
   id id: String,
@@ -53,7 +53,7 @@ pub fn fixture_sale(
 ) {
   fixture_transaction(
     buy_fee: 0.0,
-    coin:,
+    asset:,
     date:,
     id:,
     kind: transactions.Sale,
@@ -113,7 +113,7 @@ pub fn transactions_table_has_correct_values_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "SOL",
+      asset: "SOL",
       qty: 100.0,
       price_each: 10.0,
       fee: 5.0,
@@ -121,7 +121,7 @@ pub fn transactions_table_has_correct_values_test() {
     fixture_sale(
       id: "b",
       date: feb_2(),
-      coin: "SOL",
+      asset: "SOL",
       qty: 50.0,
       price_each: 10.0,
       fee: 5.0,
@@ -141,7 +141,7 @@ pub fn one_sale_has_less_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -149,7 +149,7 @@ pub fn one_sale_has_less_test() {
     fixture_sale(
       id: "b",
       date: feb_2(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 60.0,
       price_each: 0.6,
       fee: 0.0,
@@ -163,7 +163,7 @@ pub fn two_sales_have_less_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -171,7 +171,7 @@ pub fn two_sales_have_less_test() {
     fixture_sale(
       id: "b",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 60.0,
       price_each: 0.6,
       fee: 0.0,
@@ -179,7 +179,7 @@ pub fn two_sales_have_less_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 30.0,
       price_each: 0.9,
       fee: 0.0,
@@ -193,7 +193,7 @@ pub fn two_sales_have_exact_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -201,7 +201,7 @@ pub fn two_sales_have_exact_test() {
     fixture_sale(
       id: "b",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 60.0,
       price_each: 0.6,
       fee: 0.0,
@@ -209,7 +209,7 @@ pub fn two_sales_have_exact_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 40.0,
       price_each: 0.9,
       fee: 0.0,
@@ -223,7 +223,7 @@ pub fn two_sales_have_too_much_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -231,7 +231,7 @@ pub fn two_sales_have_too_much_test() {
     fixture_sale(
       id: "b",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 60.0,
       price_each: 0.6,
       fee: 0.0,
@@ -239,7 +239,7 @@ pub fn two_sales_have_too_much_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 50.0,
       price_each: 0.9,
       fee: 0.0,
@@ -253,7 +253,7 @@ pub fn two_buys_one_sale_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -261,7 +261,7 @@ pub fn two_buys_one_sale_test() {
     fixture_buy(
       id: "b",
       date: feb_2(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.6,
       fee: 0.0,
@@ -269,7 +269,7 @@ pub fn two_buys_one_sale_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 150.0,
       price_each: 1.0,
       fee: 0.0,
@@ -283,7 +283,7 @@ pub fn two_buys_two_sales_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -291,7 +291,7 @@ pub fn two_buys_two_sales_test() {
     fixture_buy(
       id: "b",
       date: feb_2(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -299,7 +299,7 @@ pub fn two_buys_two_sales_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 150.0,
       price_each: 1.0,
       fee: 0.0,
@@ -307,7 +307,7 @@ pub fn two_buys_two_sales_test() {
     fixture_sale(
       id: "d",
       date: feb_5(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 50.0,
       price_each: 2.0,
       fee: 0.0,
@@ -321,7 +321,7 @@ pub fn order_matters_test() {
     fixture_sale(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -329,7 +329,7 @@ pub fn order_matters_test() {
     fixture_buy(
       id: "b",
       date: feb_2(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -343,7 +343,7 @@ pub fn mixed_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -351,7 +351,7 @@ pub fn mixed_test() {
     fixture_buy(
       id: "b",
       date: feb_2(),
-      coin: "SOL",
+      asset: "SOL",
       qty: 100.0,
       price_each: 50.0,
       fee: 0.0,
@@ -359,7 +359,7 @@ pub fn mixed_test() {
     fixture_sale(
       id: "c",
       date: feb_4(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 50.0,
       price_each: 0.75,
       fee: 0.0,
@@ -367,7 +367,7 @@ pub fn mixed_test() {
     fixture_buy(
       id: "d",
       date: feb_5(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.6,
       fee: 0.0,
@@ -375,13 +375,13 @@ pub fn mixed_test() {
     fixture_sale(
       id: "e",
       date: feb_6(),
-      coin: "SOL",
+      asset: "SOL",
       qty: 50.0,
       price_each: 40.0,
       fee: 0.0,
     ),
   ]
-  |> assert_report("Mixed coins")
+  |> assert_report("Mixed assets")
 }
 
 pub fn duplicate_ids_test() {
@@ -389,7 +389,7 @@ pub fn duplicate_ids_test() {
     fixture_buy(
       id: "a",
       date: feb_1(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 0.5,
       fee: 0.0,
@@ -397,7 +397,7 @@ pub fn duplicate_ids_test() {
     fixture_buy(
       id: "a",
       date: feb_2(),
-      coin: "XRP",
+      asset: "XRP",
       qty: 100.0,
       price_each: 50.0,
       fee: 0.0,
